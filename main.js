@@ -127,6 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 showNotification("Erreur : ce joueur n'a pas de système assigné.", 'error');
             }
+        } else if (target.matches('.rules-btn')) {
+            const playerIndex = parseInt(target.dataset.index);
+            const player = campaignData.players[playerIndex];
+            mapViewingPlayerId = player.id; // Set the context for which player's rules to show
+            const rulesModal = document.getElementById('rules-modal');
+            renderCampaignRulesTab('rules-modal-content');
+            openModal(rulesModal);
         } else if (target.matches('.delete-player-btn')) {
             const index = parseInt(target.dataset.index);
             const playerToDelete = campaignData.players[index];
@@ -685,7 +692,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.id === 'show-map-btn') {
             openModal(mapModal);
             currentMapScale = 1;
-        renderCampaignRulesTab(); 
             setTimeout(renderGalacticMap, 50);
         } else if (e.target.id === 'show-history-btn') {
             openFullHistoryModal();
@@ -1560,4 +1566,14 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification(notificationMessage, 'success', 7000);
         }
     });
+
+    // Hide the old rules tab and panel
+    const rulesTab = document.querySelector('button[data-tab="info-content-panel"]');
+    if (rulesTab) {
+        rulesTab.style.display = 'none';
+    }
+    const infoPanel = document.getElementById('info-content-panel');
+    if (infoPanel) {
+        infoPanel.style.display = 'none';
+    }
 });
