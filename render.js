@@ -59,7 +59,8 @@ const renderPlayerList = () => {
             <div class="player-card-actions">
                 <button class="btn-secondary edit-player-btn" data-index="${index}">Modifier</button>
                 <button class="btn-danger delete-player-btn" data-index="${index}">Supprimer</button>
-                <button class="btn-secondary world-btn" data-index="${index}">JOUER</button>
+                <button class="btn-primary rules-btn" data-index="${index}" style="width: 48%;">Règles</button>
+                <button class="btn-secondary world-btn" data-index="${index}" style="width: 48%;">JOUER</button>
             </div>
         `;
         playerListDiv.appendChild(card);
@@ -845,8 +846,12 @@ const renderActionLog = () => {
 /**
  * Remplit l'onglet des règles de campagne adaptées dans la modale de la carte.
  */
-function renderCampaignRulesTab() {
-    const infoPanel = document.getElementById('info-content-panel');
+function renderCampaignRulesTab(targetPanelId) {
+    const infoPanel = document.getElementById(targetPanelId);
+    if (!infoPanel) {
+        console.error("Target panel for campaign rules not found:", targetPanelId);
+        return;
+    }
     infoPanel.innerHTML = ''; // Vider le contenu précédent
     const player = campaignData.players.find(p => p.id === mapViewingPlayerId);
 
