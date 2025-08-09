@@ -1,0 +1,663 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Download, Upload, RotateCcw, FastForward, Sword, Bug, Shield, Wand2, Undo2, Save, Edit3, Shuffle, Info } from "lucide-react";
+import { motion } from "framer-motion";
+
+// ------------------ Types ------------------
+interface Effect {
+  id: string;
+  name: string;
+  description: string;
+  durationRounds: number; // 0 = instant only
+  threatDelta: number; // applied immediately when chosen
+  waveMultiplier?: number; // >1 more tyranids, <1 fewer
+  spawnBias?: Partial<WaveComposition>; // modifies proportions
+  notes?: string;
+}
+
+interface StoryBeatEffect {
+  threatDelta?: number;
+  durationRounds?: number;
+  waveMultiplier?: number;
+  spawnBias?: Partial<WaveComposition>;
+}
+
+interface StoryEvent {
+  id: string;
+  title: string;
+  body: string; // narrative, may include {DEF} {ATT}
+  hidden?: string; // optional hidden description
+  effect?: StoryBeatEffect;
+}
+
+interface Choice {
+  id: string;
+  title: string;
+  body: string;
+  effect: Effect;
+}
+
+interface WaveComposition {
+  gaunts: number; // Termagants/Hormagaunts
+  gargoyles: number;
+  genestealers: number;
+  warriors: number;
+  monsters: number; // Carnifex/Tfex/Exocrine equivalent
+  synapse: number; // Primes/Tyrants/Neurotyrants, etc.
+}
+
+interface EventState {
+  round: number;
+  turn: number;
+  phase: "Début de round" | "Début de tour" | "Après vague";
+  threat: number; // 0..100
+  activeEffects: EffectInstance[];
+  log: string[];
+  seed: number;
+} {
+  round: number;
+  turn: number;
+  phase: "Début de round" | "Début de tour" | "Après vague";
+  threat: number; // 0..100
+  activeEffects: EffectInstance[];
+  log: string[];
+  seed: number;
+}
+
+interface EffectInstance {
+  effect: Effect;
+  remaining: number; // rounds left
+}
+
+// ------------------ Utils ------------------
+const clamp = (n: number, min = 0, max = 100) => Math.max(min, Math.min(max, n));
+const rand = (seedRef: { current: number }) => {
+  // simple LCG for deterministic session randomness
+  seedRef.current = (seedRef.current * 48271) % 0x7fffffff;
+  return seedRef.current / 0x7fffffff;
+};
+
+const pickN = <T,>(arr: T[], n: number, r: () => number): T[] => {
+  const copy = [...arr];
+  const out: T[] = [];
+  for (let i = 0; i < n && copy.length; i++) {
+    const idx = Math.floor(r() * copy.length);
+    out.push(copy.splice(idx, 1)[0]);
+  }
+  return out;
+};
+
+const levelFromThreat = (t: number) => {
+  if (t >= 85) return { label: "EXTINCTION", color: "bg-red-600", hint: "Déferlement incontrôlable" };
+  if (t >= 70) return { label: "CATASTROPHIQUE", color: "bg-red-500", hint: "Front rompu" };
+  if (t >= 55) return { label: "CRITIQUE", color: "bg-orange-500", hint: "Positions débordées" };
+  if (t >= 40) return { label: "ÉLEVÉ", color: "bg-amber-500", hint: "Pression croissante" };
+  if (t >= 25) return { label: "MODÉRÉ", color: "bg-lime-500", hint: "Résistance tenable" };
+  if (t >= 10) return { label: "FAIBLE", color: "bg-emerald-500", hint: "Contrôle du terrain" };
+  return { label: "NÉGLIGEABLE", color: "bg-teal-500", hint: "Silence des ruches" };
+};
+
+// ------------------ Default Choice Library & Story Events ------------------
+const CHOICES_LIBRARY: Choice[] = [
+  { id: "orbital-strike", title: "Frappe orbitale ciblée", body: "Les relais astropathiques hurlent ; une fenêtre s'ouvre au-dessus des nuées.", effect: { id: "orbital-strike", name: "Frappe orbitale", description: "Réduit la menace mais accroît la férocité ultérieure.", durationRounds: 2, threatDelta: -10, waveMultiplier: 1.15, notes: "+15% spawns pendant 2 rounds" } },
+  { id: "overcharge-reactor", title: "Surcharger les réacteurs de la plateforme", body: "De lourds leviers sont tirés ; les cogitateurs gémissent sous la contrainte.", effect: { id: "overcharge", name: "Surcharge", description: "+20% tourelles / -5 menace, puis +5/round", durationRounds: 2, threatDelta: -5, waveMultiplier: 1, notes: "+5 menace/fin de round (auto)" } },
+  { id: "fortify", title: "Sceller les remparts de fer bénit", body: "Les chapelains oignent les boulons ; les plaques claquent sous les marteaux.", effect: { id: "fortify", name: "Fortifications", description: "-6 menace, vagues -10%", durationRounds: 3, threatDelta: -6, waveMultiplier: 0.9 } },
+  { id: "counter-sally", title: "Sortie de contre-attaque", body: "Des portes se lèvent ; une poignée d'élus charge vers la marée.", effect: { id: "sally", name: "Contre-attaque", description: "Moins de gaunts, plus d'élites", durationRounds: 1, threatDelta: -8, spawnBias: { gaunts: -10, warriors: +2, genestealers: +3 } } },
+  { id: "evacuate", title: "Évacuer les serfs et blessés", body: "Les coursives s'emplissent de prières ; les cargos se détachent dans l'obscurité.", effect: { id: "evac", name: "Évacuation", description: "Menace -4", durationRounds: 0, threatDelta: -4 } },
+  { id: "ammo-ration", title: "Rationner le prométhium et les obus", body: "Les intendants cassent des sceaux et referment des coffres.", effect: { id: "ration", name: "Rationnement", description: "+10% spawns, -2 menace", durationRounds: 2, threatDelta: -2, waveMultiplier: 1.1 } },
+  { id: "auspex-scan", title: "Barrage d'auspex et d'encens", body: "Les fumées montent, les antennes frémissent ; des runes s'alignent.", effect: { id: "auspex", name: "Auspex", description: "Vagues plus stables (variance -30%)", durationRounds: 2, threatDelta: -3, notes: "Réduit la variance" } },
+  { id: "lure", title: "Disperser des leurres phéromonaux", body: "Des drones hurlent ; la meute hésite une seconde.", effect: { id: "lure", name: "Leurres", description: "Moins de monstres, plus de gaunts", durationRounds: 1, threatDelta: -2, spawnBias: { monsters: -2, gaunts: +5 } } },
+  { id: "sanctuary", title: "Rites de sanctification et litanies", body: "Les voix graves couvrent un instant le vrombissement des essaims.", effect: { id: "sanct", name: "Bénédiction", description: "Menace -5", durationRounds: 0, threatDelta: -5 } },
+  { id: "data-spike", title: "Injection tactique dans les cogitateurs", body: "Des paquets de données tachyoniques ensorcellent les tourelles.", effect: { id: "dataspike", name: "Optimisation", description: "Réduit la part synapse", durationRounds: 2, threatDelta: -1, spawnBias: { synapse: -1 } } },
+  { id: "promethium-wall", title: "Ériger un mur de prométhium", body: "Un rideau de feu avale la nuit ; les ombres se cabrent.", effect: { id: "promethium", name: "Rideau de feu", description: "-6 menace, +monstres", durationRounds: 1, threatDelta: -6, spawnBias: { monsters: +2, gaunts: -5 } } },
+  { id: "repair", title: "Lâcher les équipes de Techno-adeptes", body: "Les mechadendrites grésillent le long des parapets déchirés.", effect: { id: "repair", name: "Réparations", description: "-3 menace, vagues -5%", durationRounds: 1, threatDelta: -3, waveMultiplier: 0.95 } },
+  // Ajouts narratifs supplémentaires
+  { id: "vox-psalm", title: "Diffuser un psaume de fer par vox", body: "Un chœur de mille voix recouvre le fracas des armes.", effect: { id: "vox-psalm", name: "Psaume", description: "Menace -2", durationRounds: 1, threatDelta: -2 } },
+  { id: "mine-corridor", title: "Piéger les corridors d'accès", body: "Des cierges sont plantés près des mines bénies.", effect: { id: "mine", name: "Couloirs minés", description: "Biais anti-gaunts", durationRounds: 2, threatDelta: -1, spawnBias: { gaunts: -6 } } },
+  { id: "bait-squad", title: "Détacher une escouade-appât", body: "Des silhouettes s'élancent, transmetteurs allumés.", effect: { id: "bait", name: "Appât", description: "Plus de gargouilles, moins de synapse", durationRounds: 1, threatDelta: -1, spawnBias: { gargoyles: +4, synapse: -1 } } },
+  { id: "shield-overlap", title: "Recadrer le chevauchement des boucliers", body: "Des champs miroitent ; l'air vibre d'ozone.", effect: { id: "shield", name: "Boucliers", description: "vagues -8%", durationRounds: 2, threatDelta: -2, waveMultiplier: 0.92 } },
+  { id: "decapitation", title: "Coup de décapitation sur la bête alpha", body: "Le tir de précision part ; l'essaim hurle d'une seule gorge.", effect: { id: "decap", name: "Décapitation", description: "Menace -7, +gaunts", durationRounds: 1, threatDelta: -7, spawnBias: { gaunts: +6, synapse: -1 } } },
+  { id: "night-flares", title: "Allumer la nuit de fusées", body: "Des traînées blanches lacèrent les nuages toxiques.", effect: { id: "flares", name: "Fusées", description: "Variance -20%", durationRounds: 2, threatDelta: -1, notes: "Réduit légèrement la variance" } },
+  { id: "grim-harvest", title: "Moisson lugubre des cadavres", body: "Les serviteurs traînent les corps pour nourrir les forges.", effect: { id: "harvest", name: "Moisson", description: "vagues +5%", durationRounds: 2, threatDelta: -3, waveMultiplier: 1.05 } },
+  { id: "iron-oath", title: "Prêter le Serment de Fer", body: "Chaque défenseur grave son nom sur la plaque d'acier.", effect: { id: "oath", name: "Serment", description: "Menace -3", durationRounds: 0, threatDelta: -3 } },
+];
+
+// Riche bibliothèque d'événements narratifs (déclenchés en début de round/tour ou pendant une vague)
+const STORY_EVENTS: StoryEvent[] = [
+  { id: "chant-litany", title: "Litanie de Blindage", body: "Un chapelain frappe sa croix ferrée ; les voix de {DEF} s'élèvent et la peur reflue.", effect: { threatDelta: -3 } },
+  { id: "acid-rain", title: "Pluie acide", body: "Des pluies corrosives rongent les créneaux ; la pierre pleure et les optiques grésillent.", effect: { waveMultiplier: 1.08 } },
+  { id: "spore-bloom", title: "Floraison de spores", body: "Des sacs explosent en nuages verdâtres ; les silhouettes disparaissent dans un brouillard vivant.", effect: { spawnBias: { gargoyles: +3, gaunts: +2 } } },
+  { id: "synaptic-scream", title: "Cri synaptique", body: "Un hurlement traverse les crânes ; la volonté vacille devant {ATT}.", effect: { threatDelta: +4, spawnBias: { synapse: +1 } } },
+  { id: "power-surge", title: "Surtension", body: "Une onde monte des générateurs ; les boucliers palpitent avant de se stabiliser.", effect: { threatDelta: -1, waveMultiplier: 0.95 } },
+  { id: "machine-spirit", title: "L'Esprit de la Machine s'apaise", body: "De vieilles plaques d'encens et chapelets de données pendillent, et pourtant… les tourelles se synchronisent.", effect: { threatDelta: -2 } },
+  { id: "behemoth-shadow", title: "Ombre de Béhémoth", body: "Une masse astronomique occulte un instant les astres ; tous lèvent la tête.", effect: { spawnBias: { monsters: +2 } } },
+  { id: "munitions-short", title: "Caisses vides", body: "Des serfs secouent des boîtes : il reste surtout des balles bénites et peu d'obus.", effect: { waveMultiplier: 1.06 } },
+  { id: "faith-surge", title: "Marée de Foi", body: "Un reliquaire est brandi au-dessus des parapets ; le moral se regonfle.", effect: { threatDelta: -4 } },
+  { id: "bio-plasm", title: "Déversement de bioplasma", body: "Des jets bouillonnants arrachent des créneaux ; la pierre crépite.", effect: { threatDelta: +3 } },
+  { id: "hunter-packs", title: "Meutes traqueuses", body: "Des ombres félinées rampent entre les ombilicaux ; l'air sent le venin.", effect: { spawnBias: { genestealers: +3 } } },
+  { id: "wing-storm", title: "Tempête d'ailes", body: "Le ciel vrombit ; des myriades de membranes se fracassent contre les projecteurs.", effect: { spawnBias: { gargoyles: +4 } } },
+  { id: "signal-jam", title: "Parasitage de signal", body: "Des chuintements saturent les vox ; les ordres arrivent morcelés.", effect: { waveMultiplier: 1.05, threatDelta: +1 } },
+  { id: "seismic-rumble", title: "Rumeur sismique", body: "Le sol tremble ; des conduits cèdent et piègent autant d'ennemis que d'alliés.", effect: { waveMultiplier: 0.97 } },
+  { id: "carapace-molt", title: "Mue de carapace", body: "Des plaques chitineuses jonchent les fossés ; la marée se renforce d'un cran.", effect: { threatDelta: +2 } },
+  { id: "psykers-ward", title: "Voile des psykers", body: "Un cercle de cendre s'enflamme ; une barrière mentale repousse un instant les murmures.", effect: { threatDelta: -2 } },
+  { id: "void-drone", title: "Drones du vide", body: "Un essaim allié venu d'en haut grésille au-dessus des remparts, éclairant les cibles.", effect: { spawnBias: { monsters: -1 } } },
+  { id: "tyrant-roar", title: "Rugissement du Tyran", body: "Les antennes se dressent, la marée obéit d'un seul mouvement.", effect: { threatDelta: +3, spawnBias: { synapse: +1 } } },
+  { id: "ammo-blessing", title: "Bénédiction des munitions", body: "L'huile sacrée goutte sur les chargeurs ; les coups portent où il faut.", effect: { threatDelta: -1 } },
+  { id: "toxin-fog", title: "Brouillard toxique", body: "La brume colle aux poumons ; on tousse, on prie.", effect: { waveMultiplier: 1.04 } },
+  { id: "counter-howl", title: "Hurlement de défi", body: "Les vétérans frappent de la crosse ; la ligne tient.", effect: { threatDelta: -2 } },
+  { id: "feeder-tendrils", title: "Vrilles nourricières", body: "Des câbles vivants rampent sous les grilles ; des crânes disparaissent.", effect: { threatDelta: +4 } },
+  { id: "servo-repair", title: "Essaims de servocrânes", body: "Les drones-bénitiers colmatent, soudaient, chantent.", effect: { waveMultiplier: 0.96 } },
+];
+
+// ------------------ Wave generation ------------------
+const baseWaveForThreat = (t: number) => {
+  // Base points/poids abstraits par vague
+  // Ces valeurs sont délibérément système-agnostiques (pas de profils 40k).
+  if (t >= 85) return 46;
+  if (t >= 70) return 40;
+  if (t >= 55) return 34;
+  if (t >= 40) return 28;
+  if (t >= 25) return 22;
+  if (t >= 10) return 16;
+  return 10;
+};
+
+const compoFromBudget = (budget: number, r: () => number, bias?: Partial<WaveComposition>): WaveComposition => {
+  // Ratios de tiranides typiques (ajustés par bias)
+  const weights = {
+    gaunts: 5 + (bias?.gaunts ?? 0),
+    gargoyles: 2 + (bias?.gargoyles ?? 0),
+    genestealers: 2 + (bias?.genestealers ?? 0),
+    warriors: 2 + (bias?.warriors ?? 0),
+    monsters: 1 + (bias?.monsters ?? 0),
+    synapse: 1 + (bias?.synapse ?? 0),
+  } as Record<keyof WaveComposition, number>;
+
+  const entries = Object.entries(weights) as [keyof WaveComposition, number][];
+  const totalW = entries.reduce((s, [, w]) => s + Math.max(0, w), 0);
+
+  const unitCosts: Record<keyof WaveComposition, number> = {
+    gaunts: 1,
+    gargoyles: 2,
+    genestealers: 3,
+    warriors: 3,
+    monsters: 6,
+    synapse: 5,
+  };
+
+  const result: WaveComposition = { gaunts: 0, gargoyles: 0, genestealers: 0, warriors: 0, monsters: 0, synapse: 0 };
+
+  let remaining = budget;
+  while (remaining > 0) {
+    let roll = r() * totalW;
+    for (const [k, w] of entries) {
+      roll -= Math.max(0, w);
+      if (roll <= 0) {
+        const cost = unitCosts[k];
+        if (remaining - cost < -0.5) break;
+        // petite limitation: pas plus de 1 synapse par tranche 15 budget
+        if (k === "synapse" && result.synapse >= Math.floor(budget / 15)) break;
+        (result as any)[k]++;
+        remaining -= cost;
+        break;
+      }
+    }
+    // sécurité pour éviter boucle infinie en fin de budget
+    if (remaining < 1) break;
+  }
+  return result;
+};
+
+const formatWave = (w: WaveComposition) =>
+  [
+    w.gaunts && `${w.gaunts}x Gaunts`,
+    w.gargoyles && `${w.gargoyles}x Gargoyles`,
+    w.genestealers && `${w.genestealers}x Genestealers`,
+    w.warriors && `${w.warriors}x Warriors`,
+    w.monsters && `${w.monsters}x Monstres`,
+    w.synapse && `${w.synapse}x Synapse`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+// ------------------ Component ------------------
+export default function OrchestrateurAssautTyranide() {
+  const [state, setState] = useState<EventState>({
+    round: 1,
+    turn: 1,
+    phase: "Début de round",
+    threat: 25,
+    activeEffects: [],
+    log: ["Les sirènes hurlent. La plateforme se dresse dans la nuit sans étoiles. Un grondement lointain annonce la Flotte-Ruche."],
+    seed: Math.floor(Math.random() * 1e9),
+  });
+
+  const [choicesPool, setChoicesPool] = useState<Choice[]>(CHOICES_LIBRARY);
+  const [drawnChoices, setDrawnChoices] = useState<Choice[]>([]);
+  const [variance, setVariance] = useState<number>(0.25); // +/- 25%
+  const [baseMultiplier, setBaseMultiplier] = useState<number>(1);
+  const [defenderName, setDefenderName] = useState<string>("Coalition Défenseurs (x6)");
+  const [attackerName, setAttackerName] = useState<string>("Flotte-Ruche");
+  const [showMechanics, setShowMechanics] = useState<boolean>(false);
+  const seedRef = useRef<number>(state.seed);
+
+  // Rehydrate localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("tyranid-orchestrator");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setState(parsed.state);
+        setChoicesPool(parsed.choicesPool ?? CHOICES_LIBRARY);
+        setVariance(parsed.variance ?? 0.25);
+        setBaseMultiplier(parsed.baseMultiplier ?? 1);
+        setDefenderName(parsed.defenderName ?? defenderName);
+        setAttackerName(parsed.attackerName ?? attackerName);
+        setShowMechanics(parsed.showMechanics ?? false);
+        seedRef.current = parsed.state.seed;
+      } catch (e) {
+        console.warn("Impossible de recharger l'état sauvegardé");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "tyranid-orchestrator",
+      JSON.stringify({ state, choicesPool, variance, baseMultiplier, defenderName, attackerName, showMechanics })
+    );
+  }, [state, choicesPool, variance, baseMultiplier, defenderName, attackerName, showMechanics]);
+
+  const threatLevel = useMemo(() => levelFromThreat(state.threat), [state.threat]);
+
+  const activeNotes = useMemo(() => state.activeEffects.map((e) => e.effect.notes).filter(Boolean) as string[], [state.activeEffects]);
+
+  const currentMultiplier = useMemo(() => {
+    let m = baseMultiplier;
+    for (const e of state.activeEffects) {
+      if (e.effect.waveMultiplier && e.remaining > 0) m *= e.effect.waveMultiplier;
+    }
+    return Number(m.toFixed(2));
+  }, [state.activeEffects, baseMultiplier]);
+
+  const currentBias = useMemo<Partial<WaveComposition>>(() => {
+    const bias: Partial<WaveComposition> = {};
+    for (const e of state.activeEffects) {
+      if (e.remaining > 0 && e.effect.spawnBias) {
+        for (const k of Object.keys(e.effect.spawnBias) as (keyof WaveComposition)[]) {
+          const val = e.effect.spawnBias[k]!;
+          (bias as any)[k] = ((bias as any)[k] ?? 0) + val;
+        }
+      }
+    }
+    return bias;
+  }, [state.activeEffects]);
+
+  const auspexActive = useMemo(() => state.activeEffects.some((e) => e.effect.id === "auspex" && e.remaining > 0), [state.activeEffects]);
+
+  const budget = useMemo(() => {
+    const base = baseWaveForThreat(state.threat);
+    const varFactor = auspexActive ? variance * 0.7 : variance;
+    const spread = base * varFactor;
+    const roll = (rand(seedRef) * 2 - 1) * spread; // [-spread, +spread]
+    return Math.max(6, Math.round((base + roll) * currentMultiplier));
+  }, [state.threat, variance, currentMultiplier, auspexActive]);
+
+  const nextWave = useMemo(() => compoFromBudget(budget, () => rand(seedRef), currentBias), [budget, currentBias]);
+
+  const narrate = (msg: string) => setState((s) => ({ ...s, log: [
+    `${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${msg}`,
+    ...s.log,
+  ] }));
+
+  const drawChoices = () => {
+    const drawn = pickN(choicesPool, 4, () => rand(seedRef));
+    setDrawnChoices(drawn);
+    narrate("Les vox crépitent : le Commandement impose de choisir une directive.");
+  };
+
+  const applyChoice = (c: Choice) => {
+    setDrawnChoices([]);
+    setState((s) => {
+      const newThreat = clamp(s.threat + c.effect.threatDelta);
+      const newEffects = [
+        ...s.activeEffects
+          .map((e) => ({ ...e }))
+          .filter((e) => e.remaining > 0),
+      ];
+      if (c.effect.durationRounds > 0) {
+        newEffects.push({ effect: c.effect, remaining: c.effect.durationRounds });
+      }
+      // Narration SEULE: ne pas dévoiler bonus/malus
+      const line = `Directive adoptée — ${c.title}. Les parchemins data bourdonnent, des sceaux sont brisés, et les serviteurs se mettent en mouvement.`;
+      const ns = {
+        ...s,
+        threat: newThreat,
+        activeEffects: newEffects,
+        log: [line, ...s.log],
+      };
+      return ns;
+    });
+  };
+
+  const applyStoryEvent = () => {
+    const ev = pickN(STORY_EVENTS, 1, () => rand(seedRef))[0];
+    if (!ev) return;
+    // appliquer effets cachés
+    setState((s) => {
+      let menace = clamp(s.threat + (ev.effect?.threatDelta ?? 0));
+      let effects = [...s.activeEffects];
+      if (ev.effect?.durationRounds && ev.effect.durationRounds > 0) {
+        effects.push({ effect: { id: ev.id, name: ev.title, description: ev.hidden || "", durationRounds: ev.effect.durationRounds, threatDelta: 0, waveMultiplier: ev.effect.waveMultiplier, spawnBias: ev.effect.spawnBias }, remaining: ev.effect.durationRounds });
+      }
+      // log narratif
+      const text = ev.body.replaceAll("{DEF}", defenderName).replaceAll("{ATT}", attackerName);
+      return { ...s, threat: menace, activeEffects: effects, log: [text, ...s.log] };
+    });
+  };
+
+  const advanceTurn = () => {
+    setState((s) => ({ ...s, turn: s.turn + 1, phase: "Début de tour" }));
+    // 50% d'avoir un événement narratif mineur en début de tour
+    if (rand(seedRef) < 0.5) applyStoryEvent();
+    drawChoices();
+  };
+
+  const advanceRound = () => {
+    setState((s) => {
+      // effets de fin de round (ex: surcharge +5 menace)
+      let menace = s.threat;
+      for (const e of s.activeEffects) {
+        if (e.remaining > 0 && e.effect.id === "overcharge") {
+          menace = clamp(menace + 5);
+        }
+      }
+      const decayed = s.activeEffects
+        .map((e) => ({ ...e, remaining: Math.max(0, e.remaining - 1) }))
+        .filter((e) => e.remaining > 0);
+      const r = s.round + 1;
+      const t = 1;
+      const newState = { ...s, round: r, turn: t, phase: "Début de round", threat: menace, activeEffects: decayed };
+      return newState;
+    });
+    narrate("Les cloches ferraillent. Le voile de fumée se lève sur un nouveau théâtre de carnage.");
+    // Événement narratif majeur garanti au début de chaque round
+    applyStoryEvent();
+    drawChoices();
+  };
+
+  const spawnWaveNow = () => {
+    const text = showMechanics ? `${formatWave(nextWave) || "petits éclaireurs"}` : "Une masse chitineuse déferle ; ailes de cuir, griffes pendulaires et silhouettes titanesques s'imposent aux projecteurs.";
+    narrate(`VAGUE ${state.round}.${state.turn} — ${text}`);
+    // petite chance d'événement pendant la vague
+    if (rand(seedRef) < 0.35) applyStoryEvent();
+    setState((s) => ({ ...s, phase: "Après vague" }));
+  };
+
+  const resetAll = () => {
+    setState({ round: 1, turn: 1, phase: "Début de round", threat: 25, activeEffects: [], log: ["Système réinitialisé : les auspex se remettent à zéro, les cierges sont rallumés."], seed: Math.floor(Math.random() * 1e9) });
+    setDrawnChoices([]);
+  };
+
+  const undoLast = () => {
+    if (state.phase === "Après vague") {
+      setState((s) => ({ ...s, phase: "Début de tour" }));
+      narrate("Les archives reviennent en arrière, comme si un scribe avait gratté l'encre fraîche.");
+    }
+  };
+
+  // -------- Export/Import --------
+  const exportJSON = () => {
+    const blob = new Blob(
+      [
+        JSON.stringify(
+          { state, choicesPool, settings: { variance, baseMultiplier, defenderName, attackerName, showMechanics } },
+          null,
+          2
+        ),
+      ],
+      { type: "application/json" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `orchestrateur-tyranide-round${state.round}-tour${state.turn}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importRef = useRef<HTMLInputElement | null>(null);
+  const importJSON = async (file: File) => {
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    setState(obj.state);
+    setChoicesPool(obj.choicesPool ?? CHOICES_LIBRARY);
+    setVariance(obj.settings?.variance ?? 0.25);
+    setBaseMultiplier(obj.settings?.baseMultiplier ?? 1);
+    setDefenderName(obj.settings?.defenderName ?? defenderName);
+    setAttackerName(obj.settings?.attackerName ?? attackerName);
+    setShowMechanics(obj.settings?.showMechanics ?? false);
+    seedRef.current = obj.state.seed ?? Math.floor(Math.random() * 1e9);
+    narrate("Scénario importé.");
+  };
+
+  // -------- UI --------
+  return (
+    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-6 bg-gradient-to-b from-zinc-950 via-neutral-950 to-black text-zinc-100">
+      <header className="flex items-center justify-between border-b border-zinc-700 pb-4">
+        <div className="flex items-center gap-3">
+          <SkullHeader />
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">Orchestrateur – Assaut Tyranide</h1>
+            <p className="text-sm text-zinc-400">{attackerName} vs {defenderName} · 1 envahisseur contre 6 défenseurs · Chronique de siège</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={exportJSON}><Download className="w-4 h-4 mr-2"/>Exporter</Button>
+          <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="w-4 h-4 mr-2"/>Importer</Button>
+          <input ref={importRef} type="file" accept="application/json" className="hidden" onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) importJSON(f);
+          }}/>
+        </div>
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Panneau statut */}
+        <Card className="lg:col-span-2 bg-neutral-950/60 border border-zinc-800 backdrop-blur">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Statut de bataille</CardTitle>
+            <Badge className={`${threatLevel.color} text-white`}>{threatLevel.label}</Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <GothicStat label="Round" value={state.round} />
+              <GothicStat label="Tour" value={state.turn} />
+              <GothicStat label="Phase" value={state.phase} small />
+              <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-center">
+                <div className="text-xs uppercase text-zinc-400">Menace</div>
+                <div className="text-2xl font-semibold">{state.threat}</div>
+                <div className="text-xs text-zinc-400">{threatLevel.hint}</div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Menace (ajustement manuel si besoin)</Label>
+              <div className="flex items-center gap-4">
+                <Slider value={[state.threat]} min={0} max={100} step={1} onValueChange={(v) => setState((s) => ({ ...s, threat: v[0] }))} className="flex-1"/>
+                <Input type="number" value={state.threat} onChange={(e) => setState((s) => ({ ...s, threat: clamp(parseInt(e.target.value || "0")) }))} className="w-24"/>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="bg-zinc-900/50 border border-zinc-800">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Prochaine vague</CardTitle></CardHeader>
+                <CardContent>
+                  {showMechanics ? (
+                    <>
+                      <div className="text-sm text-zinc-400">Budget: {budget} · Multiplicateur: x{currentMultiplier}</div>
+                      <div className="mt-2 text-lg">{formatWave(nextWave) || "—"}</div>
+                      {activeNotes.length > 0 && (
+                        <div className="text-xs mt-2 opacity-80">Notes: {activeNotes.join("; ")}</div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-sm text-zinc-300">Les augures prédisent un fracas d'ailes et de carapaces ; la plateforme sera éprouvée.</div>
+                  )}
+                </CardContent>
+                <CardFooter className="flex gap-2">
+                  <Button onClick={spawnWaveNow}><Sword className="w-4 h-4 mr-2"/>Lancer la Vague</Button>
+                  <Button variant="secondary" onClick={undoLast}><Undo2 className="w-4 h-4 mr-2"/>Annuler</Button>
+                </CardFooter>
+              </Card>
+
+              <Card className="bg-zinc-900/50 border border-zinc-800">
+                <CardHeader className="pb-2"><CardTitle className="text-base">Effets actifs</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  {state.activeEffects.length === 0 && <div className="text-sm text-zinc-400">Aucun présage en cours.</div>}
+                  {state.activeEffects.map((e) => (
+                    <div key={e.effect.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-950 border border-zinc-800">
+                      <div>
+                        <div className="font-medium">{e.effect.name}</div>
+                        {showMechanics ? (
+                          <div className="text-xs text-zinc-400">{e.effect.description}</div>
+                        ) : (
+                          <div className="text-xs text-zinc-500">Influence occulte sur le champ de bataille</div>
+                        )}
+                      </div>
+                      <Badge variant="secondary">{e.remaining} r.</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+                <CardFooter className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => drawChoices()}><Shuffle className="w-4 h-4 mr-2"/>Proposer 4 Choix</Button>
+                  <Button variant="ghost" onClick={() => advanceTurn()}><FastForward className="w-4 h-4 mr-2"/>Tour suivant</Button>
+                  <Button variant="ghost" onClick={() => advanceRound()}><RotateCcw className="w-4 h-4 mr-2"/>Fin de round</Button>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Switch id="mech" checked={showMechanics} onCheckedChange={setShowMechanics}/>
+                    <Label htmlFor="mech" className="text-xs">Afficher les détails mécaniques</Label>
+                  </div>
+                </CardFooter>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Panneau configuration & narration */}
+        <Card className="bg-neutral-950/60 border border-zinc-800">
+          <CardHeader>
+            <CardTitle>Chapitre & Rituel</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nom de l'envahisseur</Label>
+              <Input value={attackerName} onChange={(e) => setAttackerName(e.target.value)} />
+              <Label>Nom des défenseurs</Label>
+              <Input value={defenderName} onChange={(e) => setDefenderName(e.target.value)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Variance des vagues</Label>
+              <Slider value={[variance]} min={0} max={0.6} step={0.05} onValueChange={(v) => setVariance(Number(v[0]))} />
+              <div className="text-xs text-zinc-400">Auspex réduit la variance lorsque présent.</div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Multiplicateur global des vagues</Label>
+              <Slider value={[baseMultiplier]} min={0.5} max={1.8} step={0.05} onValueChange={(v) => setBaseMultiplier(Number(v[0]))} />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2">
+              <Label>Chronique</Label>
+              <div className="h-64 overflow-auto rounded-lg border border-zinc-800 p-2 bg-black/50 text-sm leading-relaxed">
+                {state.log.map((line, idx) => (
+                  <div key={idx} className="opacity-90">{line}</div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="destructive" onClick={resetAll}><RotateCcw className="w-4 h-4 mr-2"/>Purger & Recommencer</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Choix modaux */}
+      <Dialog open={drawnChoices.length > 0}>
+        <DialogContent className="max-w-3xl bg-neutral-950 border border-zinc-800">
+          <DialogHeader>
+            <DialogTitle>Conseil de Guerre — Sélectionnez 1 directive</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              À chaque début de round ou de tour, choisissez une directive. Son véritable prix ne sera révélé qu'aux archives…
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid md:grid-cols-2 gap-4">
+            {drawnChoices.map((c) => (
+              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+                <Card className="h-full bg-zinc-900/50 border border-zinc-800">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center gap-2"><Wand2 className="w-4 h-4"/>{c.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-zinc-300 mb-2">{c.body}</p>
+                    {/* Effets cachés : pas d'affichage de description/notes */}
+                  </CardContent>
+                  <CardFooter>
+                    <Button onClick={() => applyChoice(c)} className="w-full">Proclamer la directive</Button>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDrawnChoices([])}>Refermer</Button>
+            <Button variant="secondary" onClick={() => drawChoices()}><Shuffle className="w-4 h-4 mr-2"/>Nouvelles options</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Éditeur de choix */}
+      <ChoicesEditor pool={choicesPool} onChange={setChoicesPool} />
+
+      <footer className="text-xs text-zinc-500 pt-4 border-t border-zinc-800">
+        Conseils : utilisez l'export JSON pour vos bibles de campagne. Les valeurs restent abstraites pour s'adapter à toute édition. Activez l'affichage mécanique lors du brief organisateur seulement.
+      </footer>
+    </div>
+  );
+}
+
+function SkullHeader() {
+  return (
+    <div className="relative">
+      <div className="absolute inset-0 blur-xl bg-red-900/20 rounded-full" />
+      <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-zinc-700 bg-zinc-950">
+        <svg viewBox="0 0 24 24" className="w-6 h-6"><path fill="currentColor" d="M12 2c-4.4 0-8 3.1-8 7 0 2 .8 3.7 2.1 5-.1.6-.1 1.2.1 1.8.4 1.2 1.5 2.2 2.8 2.2h6c1.3 0 2.4-1 2.8-2.2.2-.6.2-1.2.1-1.8C19.2 12.7 20 11 20 9c0-3.9-3.6-7-8-7Zm-4 14h2v2H8v-2Zm6 0h2v2h-2v-2Z"/></svg>
+      </div>
+    </div>
+  );
+}
+
+function GothicStat({ label, value, small }: { label: string; value: any; small?: boolean }) {
+  return (
+    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-center">
+      <div className="text-xs uppercase text-zinc-400">{label}</div>
+      <div className={`${small ? "text-lg" : "text-2xl"} font-semibold`}>{value}</div>
+    </div>
+  );
+}
