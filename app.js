@@ -607,16 +607,12 @@ startBtn.addEventListener("click", () => {
 
 // --- Affichage d’une phase ---
 function typeNarration(text, cb) {
-  const words = text.split(" ");
-  narrationEl.textContent = "";
-  let i = 0;
-  const it = setInterval(() => {
-    narrationEl.textContent += (i > 0 ? " " : "") + words[i++];
-    if (i >= words.length) {
-      clearInterval(it);
-      if (cb) cb();
-    }
-  }, 300);
+  narrationEl.textContent = text;
+  narrationEl.classList.remove("wow");
+  // Force reflow to restart the animation if it was already applied
+  void narrationEl.offsetWidth;
+  narrationEl.classList.add("wow");
+  if (cb) narrationEl.addEventListener("animationend", cb, { once: true });
 }
 
 function afficherPhase() {
@@ -670,7 +666,7 @@ function choisir(choix) {
   modalMeta.textContent = "";
   lastTagEl.textContent = eff.length ? eff.join(" | ") : "—";
   showModal(true);
-  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 4000);
+  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 2000);
 
   nextBtn.disabled = false;
   choicesEl.style.pointerEvents = "none";
