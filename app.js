@@ -1,213 +1,551 @@
 // ============================
 //  Warhammer 40k — Le Promontoire
-//  JS COMPLET (5 tours, 15 phases)
+//  JS COMPLET (5 tours, 15 phases) avec fluff détaillé
 // ============================
+
+// Effets numériques approximatifs selon le tag
+const effMap = {
+  "Faveur majeure": { menace: -2, tyr: -2 },
+  "Faveur mineure": { menace: -1, tyr: -1 },
+  "Défaveur mineure": { menace: +1, tyr: +1 },
+  "Défaveur majeure": { menace: +2, tyr: +2 },
+};
 
 // --- Données de scénario (5 tours × 3 phases) ---
 const phases = [
   // ===== TOUR 1 =====
-  { tour: 1, phase: "Phase de Commandement", narration:
-    "Les senseurs de la plateforme clignotent à saturation. Des spores mycétiques strient le ciel. Les défenseurs n’ont que quelques instants pour fixer leur première ligne d’action.",
+  {
+    tour: 1,
+    phase: "Phase de Commandement",
+    narration: `Les capteurs du promontoire s’affolent. Dans le ciel ardent, des spores mycétiques percent la lumière comme une pluie empoisonnée. Le vent du désert soulève des nuages de sable, brouillant les capteurs et la vue. Les défenseurs doivent choisir leur première manœuvre stratégique.`,
     choix: [
-      { texte: "Rediriger toute l’énergie vers les batteries anti-aériennes.",
-        effet: { menace: -3, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Durcir les remparts avec des champs magnétiques.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Rappeler les patrouilles extérieures (laisse le ciel libre).",
-        effet: { menace: +2, tyr: +3 }, tag: "Défaveur majeure" },
-      { texte: "Disperser les troupes pour couvrir plus de zones.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Rediriger toute l’énergie vers les batteries anti-aériennes",
+        fluff: `Les canons fendent le ciel, abattant une pluie de spores enflammées.`,
+        bonus: `-D3 unités Tyranides ce tour, mais toutes les unités ennemies gagnent +1 pour blesser à distance contre vos unités (boucliers hors ligne).`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Renforcer les murs de pierre avec des champs magnétiques",
+        fluff: `Le promontoire tremble sous une barrière invisible qui crépite dans l’air sec.`,
+        bonus: `+1 sauvegarde aux bâtiments et véhicules alliés ce tour, mais -1 Attaque avec vos armes lourdes.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Envoyer des éclaireurs à travers les dunes pour intercepter les nœuds synaptiques",
+        fluff: `Une patrouille disparaît dans la tempête, revenant mutilée.`,
+        bonus: `Retirez 1 unité d’Infanterie alliée, mais réduisez d’équivalent en points l’arrivée Tyranide au prochain tour.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Ignorer l’approche",
+        fluff: `Les réserves sont intactes, mais l’ennemi avance librement.`,
+        bonus: `+2 unités Tyranides immédiatement, mais vos tirs relancent les 1 pour toucher ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 1, phase: "Phase de Charge", narration:
-    "Des silhouettes chitineuses surgissent des dunes. Les couloirs d’accès de la plateforme deviennent des goulots d’étranglement mortels.",
+  {
+    tour: 1,
+    phase: "Phase de Charge",
+    narration: `Des silhouettes massives se détachent des tourbillons. Carnifex et Hormagaunts gravissent les pentes rocailleuses du promontoire.`,
     choix: [
-      { texte: "Bloquer les sas secondaires et forcer l’ennemi dans un entonnoir.",
-        effet: { menace: -2, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Déployer des mines à fragmentation sur le pourtour.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Contre-charge mal coordonnée, sans appui.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Repli de précaution trop tôt.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Concentrer toutes les armes lourdes sur une unité",
+        fluff: `Un mur de feu écrase une cible.`,
+        bonus: `Détruisez 1 unité Tyranide à 12" ou retirez 12 PV à un monstre à 12".`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Déployer les défenses avancées",
+        fluff: `Des tourelles jaillissent des dunes.`,
+        bonus: `+1 pour toutes les Attaques d’Overwatch ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Piéger l’accès principal avec des mines",
+        fluff: `Les premiers assaillants explosent dans un nuage de chitine.`,
+        bonus: `1D3 BM à chaque unité Tyranide qui charge, mais ces zones deviennent Terrain difficile pour vos unités aussi.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Se recentrer sur le cœur défensif",
+        fluff: `Les lignes se resserrent, mais l’ennemi progresse.`,
+        bonus: `D3 dégâts à toutes les unités ciblées par des charges réussies.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 1, phase: "Phase d’Ébranlement", narration:
-    "La coque vibre sous l’impact des spores retombées. Les vox saturent de cris et d’ordres entrecoupés.",
+  {
+    tour: 1,
+    phase: "Phase d’Ébranlement",
+    narration: `Les ondes psychiques des Tyranides traversent les esprits comme un souffle brûlant.`,
     choix: [
-      { texte: "Rétablir les boucliers locaux et purger les conduites.",
-        effet: { menace: -2, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Redistribuer les munitions vers les secteurs critiques.",
-        effet: { menace: -1, tyr: 0 }, tag: "Faveur mineure" },
-      { texte: "Ignorer les alarmes d’intégrité de coque.",
-        effet: { menace: +3, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Reporter la maintenance des canons AA.",
-        effet: { menace: +1, tyr: +1 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Rallier les troupes par un discours galvanisant",
+        fluff: `La voix du commandant perce la tempête.`,
+        bonus: `Avance gratuite de 6" à toutes les unités alliées à 18" d’un général.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Promettre renforts et extraction",
+        fluff: `Un souffle d’espoir parcourt les lignes.`,
+        bonus: `D3 PV rendus aux unités alliées à 18" d’un général.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Punir les lâches publiquement",
+        fluff: `L’ordre est rétabli par le sang.`,
+        bonus: `D3 dégâts sur les unités alliées à 9" d’un général.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Ignorer la panique",
+        fluff: `Les nerfs craquent.`,
+        bonus: `Échec automatique des tests d’ébranlement pour toutes les unités à 12" d’un général.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
 
   // ===== TOUR 2 =====
-  { tour: 2, phase: "Phase de Commandement", narration:
-    "La première vague a révélé des bioformes tunnelières. Des vibrations profondes annoncent un assaut par en-dessous.",
+  {
+    tour: 2,
+    phase: "Phase de Commandement",
+    narration: `Les spores qui ont survécu à l’assaut initial se fendent et libèrent des nuées voraces qui escaladent les pentes rocheuses. Les alarmes du promontoire saturent les canaux.`,
     choix: [
-      { texte: "Inonder les vides sanitaires avec des agents incendiaires.",
-        effet: { menace: -3, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Renforcer les planchers techniques par des étais blindés.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Ignorer l’intrusion souterraine, concentrer tout au sommet.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Décaler les réserves loin des secousses (zones clefs moins couvertes).",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Inonder les ravines d’accès avec du prométhéum",
+        fluff: `Les canyons s’embrasent.`,
+        bonus: `2D3 BM à toutes les unités Tyranides arrivant en renfort ce tour.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Activer les projecteurs longue portée",
+        fluff: `Les cibles se détachent nettement dans la poussière.`,
+        bonus: `Les armes alliées ignorent les malus de Couvert ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Récupérer des munitions dans les soutes extérieures",
+        fluff: `Opération risquée.`,
+        bonus: `+1 unité Tyranide ce tour, mais +1 Attaque pour toutes les armes à distance alliées.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Percée vers l’ancien puits minier",
+        fluff: `Offensive téméraire.`,
+        bonus: `Perdez 1 véhicule allié, mais réduisez de 200 pts l’arrivée Tyranide au prochain tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 2, phase: "Phase de Charge", narration:
-    "Des Béhémoths percent le sable; leurs gueules crachent des nuées de gaunts. Les murs résonnent sous l’impact.",
+  {
+    tour: 2,
+    phase: "Phase de Charge",
+    narration: `Les dunes tremblent sous les pas de monstres, escortés d’essaims rapides.`,
     choix: [
-      { texte: "Feu concentré sur les Béhémoths, ignorer les écrans.",
-        effet: { menace: -2, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Piéger les rampes d’accès avec des charges à retardement.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Sortie précipitée dans la plaine pour intercepter.",
-        effet: { menace: +3, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Ordres contradictoires : tir/charge en simultané.",
-        effet: { menace: +1, tyr: +1 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Déployer des tourelles automatiques",
+        fluff: `Le sable se hérisse de canons.`,
+        bonus: `+1 tir pour toutes les armes stationnaires alliées ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Concentrer tous les tirs sur le plus gros monstre",
+        fluff: `Feu à volonté.`,
+        bonus: `Infligez 2D6 PV à une seule créature monstrueuse.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Utiliser les réacteurs d’appoint",
+        fluff: `Avancer en tirant.`,
+        bonus: `Avance et Tir sans malus ce tour, mais -1 à la sauvegarde jusqu’à la fin du tour.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Se replier derrière les défenses internes",
+        fluff: `Abandon des lignes extérieures.`,
+        bonus: `Retirez D3 unités alliées, mais les Tyranides perdent leur Charge ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 2, phase: "Phase d’Ébranlement", narration:
-    "Les conduits d’aération exhalent des spores corrosives. Les optics crépitent; la visibilité chute.",
+  {
+    tour: 2,
+    phase: "Phase d’Ébranlement",
+    narration: `Les ondes synaptiques saturent l’air chaud.`,
     choix: [
-      { texte: "Déployer des scrubs atmosphériques et sceller les ponts ouverts.",
-        effet: { menace: -2, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Rediriger la circulation du personnel par des couloirs sûrs.",
-        effet: { menace: -1, tyr: 0 }, tag: "Faveur mineure" },
-      { texte: "Laisser ouverts les ponts pour ‘gagner du temps’.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Pénurie de filtres : réemploi de cartouches.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Ordres cris de sang-froid",
+        fluff: `Discipline de fer.`,
+        bonus: `Relance gratuite des sauvegardes ratées à 6" d’un général ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Encouragement par les actes",
+        fluff: `Charge héroïque.`,
+        bonus: `Doublez les Attaques d’une unité alliée ce tour.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Confier l’onde aux psykers",
+        fluff: `Barrière mentale.`,
+        bonus: `D3 BM à chaque Psyker allié, mais annulez une capacité psychique Tyranide ce tour.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Tenir coûte que coûte",
+        fluff: `Sacrifice assumé.`,
+        bonus: `Retirez 1 unité alliée à 6" d’un général, mais +2 aux tests de moral ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
 
   // ===== TOUR 3 =====
-  { tour: 3, phase: "Phase de Commandement", narration:
-    "Un dôme de nuées gargouillantes obscurcit l’astre. Des bio-canons s’ajustent au loin.",
+  {
+    tour: 3,
+    phase: "Phase de Commandement",
+    narration: `Le sol sec craque. Plusieurs menaces titanesques approchent en même temps.`,
     choix: [
-      { texte: "Synchroniser AA + artillerie lourde sur tirs croisés.",
-        effet: { menace: -3, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Activer les projecteurs aveuglants sur l’approche.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Éteindre l’AA pour économiser l’énergie.",
-        effet: { menace: +3, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Geler les rotations d’équipage (fatigue).",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Tir orbital coordonné",
+        fluff: `Les rochers explosent sous la frappe.`,
+        bonus: `Infligez 3D6 PV à une unité monstrueuse ou retirez une unité ≤ 200 pts.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Renforcer les générateurs de champ déflecteur",
+        fluff: `L’air crépite autour des défenseurs.`,
+        bonus: `+1 à toutes les invulnérables alliées ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Raid derrière les lignes ennemies",
+        fluff: `Contre-attaque dans le désert.`,
+        bonus: `Retirez 1 unité rapide ou véhicule, mais les renforts ennemis du prochain tour perdent 1D3 unités.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Réorganiser autour du noyau énergétique",
+        fluff: `Défense du centre.`,
+        bonus: `+2 unités Tyranides immédiatement, mais les alliés à 6" du noyau ignorent les BM ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 3, phase: "Phase de Charge", narration:
-    "Des monstres à carapace luisante percent les lignes, escortés par des essaims rapides.",
+  {
+    tour: 3,
+    phase: "Phase de Charge",
+    narration: `Les Tyranides forcent les accès, les petits essaims infiltrent les crevasses.`,
     choix: [
-      { texte: "Priorité aux monstres : canons laser et fuseurs en tir ciblé.",
-        effet: { menace: -2, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Écrans d’infanterie en défensive serrée.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Charge frontale contre les carapaces lourdes.",
-        effet: { menace: +2, tyr: +3 }, tag: "Défaveur majeure" },
-      { texte: "Tirs non coordonnés, gaspillage de munitions.",
-        effet: { menace: +1, tyr: +1 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Verrouiller portes et accès",
+        fluff: `Barrières activées.`,
+        bonus: `-2" au Mouvement de Charge ennemi ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Rideau d’artillerie sur un flanc",
+        fluff: `Déluge explosif.`,
+        bonus: `2D3 BM à chaque unité ennemie dans un quart de table choisi.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Contre-attaque prématurée",
+        fluff: `Offensive risquée.`,
+        bonus: `Charge après Avance, mais -1 pour toucher au CàC.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Faire exploser des dépôts de munitions",
+        fluff: `Dévastation totale.`,
+        bonus: `D6 BM à toutes les unités dans 6", retirez 1 artillerie alliée.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 3, phase: "Phase d’Ébranlement", narration:
-    "Les vox hurlent : « Brèche sectorielle ! » Les pict-feeds deviennent neige.",
+  {
+    tour: 3,
+    phase: "Phase d’Ébranlement",
+    narration: `Les visions psychiques deviennent insupportables.`,
     choix: [
-      { texte: "Colmater la brèche avec unités rapides + champs provisoires.",
-        effet: { menace: -2, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Évacuer les civils restants vers le noyau central.",
-        effet: { menace: -1, tyr: 0 }, tag: "Faveur mineure" },
-      { texte: "Ignorer la brèche pour tenir les lignes actuelles.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Détourner des équipes de réparation vers d’autres tâches.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Signal psychique brouilleur",
+        fluff: `Silence dans l’esprit.`,
+        bonus: `Annulez une Synapse ennemie et forcez D3 unités Tyranides à tester le moral.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Soins concentrés",
+        fluff: `Médecins de campagne.`,
+        bonus: `Restaurez D3+1 PV à 3 unités alliées.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Renvoyer les convalescents au front",
+        fluff: `Dernier recours.`,
+        bonus: `Replacez une unité détruite à moitié effectif, mais -1 à sa sauvegarde.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Tenir par la menace directe",
+        fluff: `Autorité brutale.`,
+        bonus: `Retirez D3 figurines dans chaque unité à 6" d’un officier, mais immunité à l’ébranlement ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
 
   // ===== TOUR 4 =====
-  { tour: 4, phase: "Phase de Commandement", narration:
-    "Les bio-synapses s’intensifient : une intelligence froide et implacable dirige l’assaut.",
+  {
+    tour: 4,
+    phase: "Phase de Commandement",
+    narration: `Les Tyranides franchissent les pentes et se déversent sur le plateau du promontoire.`,
     choix: [
-      { texte: "Contre-guerre électronique : brouillage ciblé des relais synaptiques.",
-        effet: { menace: -3, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Tirs de contre-batterie sur créatures relais.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Éteindre les relais internes (perte de coordination).",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Mutualiser les fréquences (risque d’interférences).",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Inonder les couloirs de gaz incendiaire",
+        fluff: `Les boyaux rocheux brûlent.`,
+        bonus: `Infligez 2D6 BM réparties sur les unités ennemies à l’intérieur.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Sceller les compartiments menacés",
+        fluff: `Portes verrouillées.`,
+        bonus: `-2" au Mouvement des unités ennemies à l’intérieur.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Contre-offensive blindée dans les couloirs",
+        fluff: `Charges meurtrières.`,
+        bonus: `1D3 BM à 3 unités ennemies au centre, mais détruisez 1 véhicule allié.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Détourner l’énergie vers les boucliers internes",
+        fluff: `Dernière ligne.`,
+        bonus: `+3 unités Tyranides à l’extérieur, mais +1 sauvegarde aux alliés à l’intérieur.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 4, phase: "Phase de Charge", narration:
-    "Des bio-plasma lacère les parapets; les troupes cherchent un abri tandis que l’ennemi se rue.",
+  {
+    tour: 4,
+    phase: "Phase de Charge",
+    narration: `Les essaims convergent par tous les accès vers le sommet.`,
     choix: [
-      { texte: "Déclencher le ‘Rideau de feu’ sur les ponts d’accès.",
-        effet: { menace: -2, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Tirer, décrocher, réengager (harcèlement).",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Tenir à découvert pour maintenir la cadence.",
-        effet: { menace: +3, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Ordre tardif : contre-attaque sans appui.",
-        effet: { menace: +1, tyr: +1 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Déployer des sentinelles de combat",
+        fluff: `Robots en première ligne.`,
+        bonus: `Alliés à 6" d’un point d’accès ont +1 pour toucher au tir ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Artillerie intérieure sur point critique",
+        fluff: `Cible neutralisée.`,
+        bonus: `Retirez une unité ≤ 200 pts à l’intérieur.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Faire exploser un réacteur auxiliaire",
+        fluff: `Souffle de feu.`,
+        bonus: `2D3 BM à toutes les unités dans 6" de l’accès ciblé.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Tenir coûte que coûte",
+        fluff: `Corps-à-corps furieux.`,
+        bonus: `Relance pour toucher au CàC, mais D3 pertes automatiques après combats.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 4, phase: "Phase d’Ébranlement", narration:
-    "Les conduites de refroidissement sifflent; une surchauffe globale menace la centrale.",
+  {
+    tour: 4,
+    phase: "Phase d’Ébranlement",
+    narration: `Les communications sont saturées, la roche tremble.`,
     choix: [
-      { texte: "Purge thermique et réduction temporaire de charge.",
-        effet: { menace: -2, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Redondance manuelle des circuits critiques.",
-        effet: { menace: -1, tyr: 0 }, tag: "Faveur mineure" },
-      { texte: "Ignorer les alertes pour garder la pleine puissance.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Reporter la purge : coup de chaleur localisé.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Message de ralliement général",
+        fluff: `Ordre global.`,
+        bonus: `Toutes les unités alliées effectuent un mouvement normal de 6".`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Redéploiement vers zones critiques",
+        fluff: `Déplacement tactique.`,
+        bonus: `Déplacez une unité alliée de 12" sans Overwatch ennemi.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Sacrifice pour gagner du temps",
+        fluff: `Un dernier rempart.`,
+        bonus: `Retirez une unité alliée à l’intérieur ; aucun mouvement ennemi dans cette zone ce tour.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Ignorer l’évacuation médicale",
+        fluff: `Tout pour le combat.`,
+        bonus: `Retirez D6 figurines des unités blessées, mais +1 Attaque pour toutes les autres.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
 
   // ===== TOUR 5 =====
-  { tour: 5, phase: "Phase de Commandement", narration:
-    "Le ciel se fissure d’un grondement titanesque : l’Alpha de la nuée approche. C’est l’heure du dernier pari.",
+  {
+    tour: 5,
+    phase: "Phase de Commandement",
+    narration: `Les boucliers vacillent. Les renforts n’arriveront pas. C’est le moment de décider.`,
     choix: [
-      { texte: "Concentrer tout sur l’Alpha : priorités absolues.",
-        effet: { menace: -3, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Évacuation ciblée des blessés et rotation des lignes.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Laisser l’Alpha pour ‘nettoyer’ les petits.",
-        effet: { menace: +3, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Diviser les forces par secteurs autonomes.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Déclencher l’arsenal de sécurité final",
+        fluff: `Dernière frappe.`,
+        bonus: `Infligez 4D6 BM réparties sur les Tyranides.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Activer le protocole de confinement total",
+        fluff: `Fermeture complète.`,
+        bonus: `Retirez D3 unités alliées à l’extérieur, mais aucun ennemi n’entre ce tour.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Tout pour les armes lourdes",
+        fluff: `Feu massif.`,
+        bonus: `+1 pour blesser à distance pour les alliés, mais -1 à leur sauvegarde.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Rediriger vers les systèmes de survie",
+        fluff: `Évacuation prioritaire.`,
+        bonus: `Aucun tir allié ce tour, mais évacuez 200 pts d’unités alliées.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 5, phase: "Phase de Charge", narration:
-    "L’Alpha brise la dune : une masse de crocs et d’os qui ruine tout ce qu’elle touche.",
+  {
+    tour: 5,
+    phase: "Phase de Charge",
+    narration: `Les monstres sont partout. Frapper ou tout détruire.`,
     choix: [
-      { texte: "Guider l’Alpha dans un couloir de tir pré-saturé.",
-        effet: { menace: -2, tyr: -2 }, tag: "Faveur majeure" },
-      { texte: "Empêtrer l’Alpha avec câbles et charges adhésives.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Duel héroïque au corps à corps (téméraire).",
-        effet: { menace: +2, tyr: +3 }, tag: "Défaveur majeure" },
-      { texte: "Tirs dispersés par panique.",
-        effet: { menace: +1, tyr: +1 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Autodestruction de sections",
+        fluff: `Tout s’effondre.`,
+        bonus: `Choisissez deux zones et retirez toutes les unités qui s’y trouvent.`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Charge désespérée vers la sortie",
+        fluff: `Percée finale.`,
+        bonus: `Déplacez 3 unités alliées de 12" et engagez le CàC si possible.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Faire sauter les conduits de carburant",
+        fluff: `Explosion cataclysmique.`,
+        bonus: `2D6 BM à toutes les unités dans un rayon de 9" du centre.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Tout concentrer sur le plus grand monstre",
+        fluff: `Duel final.`,
+        bonus: `Infligez D6+3 PV à un monstre, mais +3 unités ennemies arrivent ce tour.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
-  { tour: 5, phase: "Phase d’Ébranlement", narration:
-    "Les alarmes hurlent toutes à la fois. La poussière, le sang et les spores forment un rideau opaque. C’est la dernière décision.",
+  {
+    tour: 5,
+    phase: "Phase d’Ébranlement",
+    narration: `Dernières forces, derniers choix.`,
     choix: [
-      { texte: "Ralliement général, contre-poussée synchronisée.",
-        effet: { menace: -3, tyr: -1 }, tag: "Faveur majeure" },
-      { texte: "Verrouillage de la plateforme et tir de saturation final.",
-        effet: { menace: -1, tyr: -1 }, tag: "Faveur mineure" },
-      { texte: "Rompre le contact pour ‘sauver’ l’essentiel.",
-        effet: { menace: +2, tyr: +2 }, tag: "Défaveur majeure" },
-      { texte: "Silence radio, chacun pour soi.",
-        effet: { menace: +1, tyr: 0 }, tag: "Défaveur mineure" },
-    ]
+      {
+        texte: "Sacrifice héroïque du commandement",
+        fluff: `Geste ultime.`,
+        bonus: `Retirez le général allié ; toutes les unités alliées font un mouvement gratuit de 9".`,
+        tag: "Faveur majeure",
+        effet: { ...effMap["Faveur majeure"] },
+      },
+      {
+        texte: "Concentration sur la survie",
+        fluff: `Défense totale.`,
+        bonus: `+1 sauvegarde et +1 PV temporaire à toutes les unités alliées jusqu’à la fin.`,
+        tag: "Faveur mineure",
+        effet: { ...effMap["Faveur mineure"] },
+      },
+      {
+        texte: "Abréger les souffrances",
+        fluff: `Retraite accélérée.`,
+        bonus: `Retirez D3 figurines blessées par unité ; +3" au Mouvement allié.`,
+        tag: "Défaveur mineure",
+        effet: { ...effMap["Défaveur mineure"] },
+      },
+      {
+        texte: "Refus absolu de reculer",
+        fluff: `Ténacité inhumaine.`,
+        bonus: `Immunité au moral pour le reste, mais D3 BM à chaque fin de phase sur vos unités.`,
+        tag: "Défaveur majeure",
+        effet: { ...effMap["Défaveur majeure"] },
+      },
+    ],
   },
 ];
 
@@ -240,7 +578,7 @@ const badgePhaseEl  = document.getElementById("badgePhase");
 
 // --- Utils ---
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function percentFrom(val, scale = 25) { // 25 => 25 pts ≈ 100%
+function percentFrom(val, scale = 25) {
   return clamp(Math.round((clamp(val, 0, scale) / scale) * 100), 0, 100);
 }
 
@@ -261,20 +599,18 @@ function afficherPhase() {
   const p = phases[phaseIndex];
   if (!p) return finDePartie();
 
-  // Texte & badges
   narrationEl.textContent = p.narration;
   phaseTitleEl.textContent = p.phase;
   badgeTourEl.textContent = `Tour ${p.tour}`;
   badgePhaseEl.textContent = p.phase;
   hudPhaseEl.textContent = `${phaseIndex + 1} / ${phases.length}`;
 
-  // Choix mélangés
   const choixMelanges = [...p.choix].sort(() => Math.random() - 0.5);
   choicesEl.innerHTML = "";
   choixMelanges.forEach((c) => {
     const btn = document.createElement("div");
     btn.className = "choice";
-    btn.innerHTML = `<div class="c-title">${c.texte}</div>`;
+    btn.innerHTML = `<div class="c-title">${c.texte}</div><div class="c-tag">${c.tag}</div>`;
     btn.addEventListener("click", () => choisir(c));
     choicesEl.appendChild(btn);
   });
@@ -286,23 +622,21 @@ function afficherPhase() {
 function choisir(choix) {
   const p = phases[phaseIndex];
 
-  // Appliquer effets
   menace += choix.effet.menace || 0;
   tyr    += choix.effet.tyr    || 0;
   updateHUD();
 
-  // Journal
   const line = document.createElement("div");
   line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte} <span class="meta">(${choix.tag})</span>`;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 
-  // Modal
-  modalTitle.textContent = "Résolution";
+  modalTitle.textContent = choix.texte;
   const eff = [];
   if (choix.effet.menace) eff.push(`Menace ${choix.effet.menace > 0 ? "+" : ""}${choix.effet.menace}`);
   if (choix.effet.tyr)    eff.push(`Arrivées Tyranides ${choix.effet.tyr > 0 ? "+" : ""}${choix.effet.tyr}`);
-  modalText.textContent = eff.length ? `Effets appliqués : ${eff.join(" | ")}` : "Aucun effet notable.";
+  const effStr = eff.length ? `Effets appliqués : ${eff.join(" | ")}` : "Aucun effet numérique.";
+  modalText.innerHTML = `<p>${choix.fluff}</p><p><em>${choix.bonus}</em></p><p class="meta">${effStr}</p>`;
   modalMeta.textContent = `Tag : ${choix.tag} — Totaux → Menace ${menace} | Arrivées ${tyr}`;
   lastTagEl.textContent = choix.tag;
   showModal(true);
@@ -337,7 +671,6 @@ nextBtn.addEventListener("click", () => {
 });
 
 skipBtn.addEventListener("click", () => {
-  // Remélange sans changer la phase
   afficherPhase();
 });
 
@@ -363,7 +696,6 @@ function finDePartie() {
   const resume = `Bilan final → Menace ${menace} | Arrivées Tyranides ${tyr}.`;
   logEl.innerHTML += `<div><b>Fin :</b> ${verdict} <span class="meta">(${resume})</span></div>`;
 
-  // Afficher un dernier panneau récapitulatif
   modalTitle.textContent = "Bilan de Campagne";
   modalText.textContent = verdict;
   modalMeta.textContent = resume;
