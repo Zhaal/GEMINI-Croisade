@@ -1,40 +1,395 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
-import { Download, Upload, RotateCcw, FastForward, Sword, Bug, Shield, Wand2, Undo2, Save, Edit3, Shuffle, Info } from "lucide-react";
-import { motion } from "framer-motion";
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invasion Tyranide — Événement narratif 40K</title>
+  <style>
+    :root{
+      --bg:#0b0b0f; --panel:#14141a; --muted:#8b8b96; --text:#e6e6ea; --accent:#d9a441; --accent-2:#c92a2a;
+      --good:#2aa36b; --bad:#e03131; --card:#101016; --glow:#d9a44155;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 800px at 70% -10%,#1a1510 0%,#0b0b0f 45%,#09090c 100%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+    h1,h2,h3{margin:0 0 .5rem 0;font-weight:700;letter-spacing:.5px}
+    h1{font-size:clamp(22px,4vw,36px)}
+    h2{font-size:clamp(18px,3vw,24px)}
+    small, .muted{color:var(--muted)}
 
-// ------------------ Types ------------------
-interface Effect {
-  id: string;
-  name: string;
-  description: string;
-  durationRounds: number; // 0 = instant only
-  threatDelta: number; // applied immediately when chosen
-  waveMultiplier?: number; // >1 more tyranids, <1 fewer
-  spawnBias?: Partial<WaveComposition>; // modifies proportions
-  notes?: string;
-}
+    /* Layout */
+    .wrap{max-width:1100px;margin-inline:auto;padding:18px}
+    header{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #27272f;padding-bottom:12px;margin-bottom:14px}
+    .crest{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from 210deg at 50% 50%,#302512, #1e1a12 70%, #141216);box-shadow:0 0 0 2px #3a2e1a, 0 0 20px var(--glow)}
+    .crest svg{width:40px;height:40px;fill:var(--accent)}
+    .title{display:flex;flex-direction:column}
+    .pill{display:inline-flex;gap:8px;align-items:center;padding:4px 10px;border:1px solid #2d2d36;border-radius:999px;background:#0e0e14}
 
-interface StoryBeatEffect {
-  threatDelta?: number;
-  durationRounds?: number;
-  waveMultiplier?: number;
-  spawnBias?: Partial<WaveComposition>;
-}
+    /* Stats bar */
+    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+    .stat{background:linear-gradient(180deg,#13131a, #0c0c12);border:1px solid #26262f;border-radius:14px;padding:10px 12px}
+    .stat h3{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:#b7b7bf;margin-bottom:6px}
+    .stat .val{font-size:22px;font-weight:700}
+    .menace{position:relative;height:10px;border-radius:999px;background:#1a1a22;overflow:hidden;margin-top:8px}
+    .menace>span{position:absolute;inset:0;transform-origin:left center;background:linear-gradient(90deg,#5f2 0%,#fd5 40%,#f71 70%,#f22 100%);}
 
-interface StoryEvent {
-  id: string;
+    /* Panels */
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:12px}
+    .panel{background:linear-gradient(180deg,#14141a,#0f0f14);border:1px solid #262632;border-radius:16px;padding:14px}
+    .panel .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+
+    /* Choices */
+    .choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .choice{background:linear-gradient(180deg,#121219,#0c0c12);border:1px solid #262636;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+    .choice h4{margin:0;font-size:16px}
+    .choice p{margin:0;color:#bfc0c7}
+    .choice button{margin-top:auto}
+
+    /* Buttons */
+    button{appearance:none;border:none;background:linear-gradient(180deg,#1b1b24,#13131a);border:1px solid #2f2f3b;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:700}
+    button:hover{box-shadow:0 0 0 2px #2f2f3b inset, 0 0 0 2px #2f2f3b}
+    .btn-primary{background:linear-gradient(180deg,#2a2316,#1a1510);border-color:#3a2c18;box-shadow:0 0 0 1px #3a2c18 inset}
+    .btn-danger{background:linear-gradient(180deg,#2a1616,#1a1010);border-color:#402020}
+    .btn-ghost{background:transparent;border-color:#2f2f3b}
+
+    /* Log */
+    .log{height:320px;overflow:auto;border-radius:12px;background:#0a0a0f;border:1px solid #22222b;padding:10px}
+    .log .entry{padding:10px;border-left:3px solid #34343f;margin-bottom:10px;background:#0e0e14;border-radius:8px}
+    .log .good{border-left-color:var(--good)}
+    .log .bad{border-left-color:var(--bad)}
+
+    /* Wave box */
+    .wave{display:flex;gap:10px;flex-wrap:wrap}
+    .tag{padding:6px 10px;border:1px solid #2f2f3b;border-radius:999px;font-weight:600;background:#0d0d14}
+
+    /* Admin */
+    .admin{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    input[type="text"], input[type="number"], textarea{width:100%;background:#0b0b12;color:var(--text);border:1px solid #2a2a35;border-radius:10px;padding:10px}
+
+    /* Modal */
+    dialog{border:none;border-radius:16px;max-width:720px;width:min(92vw,720px);background:#0e0e14;color:var(--text);padding:0;overflow:hidden}
+    dialog::backdrop{background:#0008}
+    .modal-head{display:flex;justify-content:space-between;align-items:center;background:#15151c;border-bottom:1px solid #262632;padding:12px 14px}
+    .modal-body{padding:14px}
+    .effects{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{padding:6px 8px;border-radius:8px;background:#0e1510;border:1px solid #244;}
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .grid{grid-template-columns:1fr}
+      .stats{grid-template-columns:repeat(2,1fr)}
+      .choices{grid-template-columns:1fr}
+      .admin{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <!--
+  =============================================================
+  Invasion Tyranide — Outil narratif pour événement 40K (HTML autonome)
+  -------------------------------------------------------------
+  • Un seul fichier, aucune dépendance externe.
+  • Interface en français. Thème gothique/impérial.
+  • Boucle : à chaque Tour, un Événement apparaît avec 4 choix. Les effets (bonus/malus/modifs de menace) sont CACHÉS jusque
+    après le clic. La Menace détermine la taille/composition de la vague tyranide suivante.
+  • Panneau Admin pour ajuster : nom de planète, seed, Menace, ajout d'événements, export/import, etc.
+  • Sauvegarde automatique dans localStorage (clé: w40k_event_state).
+
+  Personnalisation rapide :
+    – Changez les tables d'unités et la bibliothèque d'événements dans les constantes UNITS et EVENTS ci‑dessous.
+    – Les modificateurs possibles : threat (+/-), bonus/malus (tags), spawnMod (multiplier, addApex, addSynapse, etc.).
+  =============================================================
+  -->
+
+  <div class="wrap">
+    <header>
+      <div class="crest" aria-hidden="true">
+        <!-- simple aquila/skull hybrid glyph -->
+        <svg viewBox="0 0 64 64"><path d="M30 6h4l2 8h8l6 6-6 2v6h-8v6l-4 10-4-10v-6h-8v-6l-6-2 6-6h8l2-8zM18 46l8 4-6 8h-6l-4-4 8-8zm28 0-8 4 6 8h6l4-4-8-8z"/></svg>
+      </div>
+      <div class="title">
+        <h1>Invasion Tyranide — Défense d'une Plateforme</h1>
+        <span class="pill"><strong>Planète:</strong>&nbsp;<span id="planetName">Helios‑IX</span>&nbsp;•&nbsp;<strong>Seed:</strong>&nbsp;<span id="seedShow">—</span></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-ghost" id="btnReset">Nouvelle partie</button>
+        <button class="btn-primary" id="btnNext">Prochain événement</button>
+      </div>
+    </header>
+
+    <section class="stats" aria-label="Statistiques de mission">
+      <div class="stat"><h3>Tour</h3><div class="val" id="turn">1</div></div>
+      <div class="stat"><h3>Menace</h3><div class="val"><span id="threatVal">20</span> / 100</div><div class="menace" aria-hidden="true"><span id="menaceBar" style="transform:scaleX(.2)"></span></div></div>
+      <div class="stat"><h3>Vague Tyranide</h3><div class="val" id="waveSize">—</div><small class="muted" id="waveHint"></small></div>
+      <div class="stat"><h3>Modificateurs</h3><div><span class="tag" id="modsEmpty">aucun</span><span id="mods"></span></div></div>
+      <div class="stat"><h3>Défenseurs</h3><div class="val" id="defenders">6 joueurs</div><small class="muted">1 Attaquant : Essaim Tyranide</small></div>
+    </section>
+
+    <div class="grid">
+      <!-- Événement & Choix -->
+      <section class="panel">
+        <div class="head">
+          <h2 id="eventTitle">—</h2>
+          <button class="btn-ghost" id="btnReroll">Relancer l'événement</button>
+        </div>
+        <p id="eventText" class="muted">Cliquez sur « Prochain événement » pour commencer.</p>
+        <div class="choices" id="choices"></div>
+      </section>
+
+      <!-- Vague générée & Journal -->
+      <section class="panel">
+        <div class="head"><h2>Vague générée</h2><button class="btn-ghost" id="btnGenWave">Générer la vague</button></div>
+        <div class="wave" id="wave"></div>
+        <hr style="border:none;border-top:1px solid #292934;margin:12px 0">
+        <div class="head"><h2>Journal</h2><div style="display:flex;gap:8px"><button class="btn-ghost" id="btnExport">Exporter</button><button class="btn-ghost" id="btnImport">Importer</button></div></div>
+        <div class="log" id="log" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <!-- Panneau Admin -->
+    <section class="panel" style="margin-top:14px">
+      <div class="head"><h2>Admin & Personnalisation</h2><button class="btn-ghost" id="btnCollapseAdmin">Masquer</button></div>
+      <div class="admin" id="admin">
+        <div class="field">
+          <label>Nom de la planète</label>
+          <input type="text" id="inpPlanet" value="Helios‑IX" />
+        </div>
+        <div class="field">
+          <label>Menace (0–100)</label>
+          <input type="number" id="inpThreat" min="0" max="100" value="20" />
+        </div>
+        <div class="field">
+          <label>Seed aléatoire (laisser vide pour nouvelle)</label>
+          <input type="text" id="inpSeed" placeholder="ex: m41‑999.Helios" />
+        </div>
+        <div class="field">
+          <label>Événement personnalisé (JSON, 4 choix)</label>
+          <textarea id="inpCustomEvent" rows="5" placeholder='{"title":"…","text":"…","choices":[{"label":"…","text":"…","effects":{"threat":+5}} …]}'></textarea>
+          <div style="display:flex;gap:8px">
+            <button id="btnAddEvent">Ajouter à la bibliothèque</button>
+            <button class="btn-danger" id="btnClearEvents">Vider les perso</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal: Résolution du choix -->
+  <dialog id="dlg">
+    <div class="modal-head">
+      <strong>Conséquences révélées</strong>
+      <button class="btn-ghost" onclick="dlg.close()">Fermer</button>
+    </div>
+    <div class="modal-body">
+      <h3 id="dlgTitle">—</h3>
+      <p id="dlgText" class="muted">—</p>
+      <div class="effects" id="dlgEffects"></div>
+    </div>
+  </dialog>
+
+  <script>
+    // ======= Données =======
+    const UNITS = {
+      low: ["Termagants", "Hormagaunts", "Gargouilles"],
+      mid: ["Guerriers Tyranides", "Rôdeurs", "Essaims de Voraces"],
+      high:["Carnifex", "Zoanthrope", "Exocrine", "Toxicrène"],
+      apex:["Trygon", "Mawloc", "Hiérodule (petit)"]
+    };
+
+    // Bibliothèque d'événements (peut être enrichie via Admin)
+    const EVENTS_BASE = [
+      {
+        title:"Réacteur en surcharge",
+        text:"Le cœur thermique de la plateforme gronde. Une purge d'urgence est possible, au prix d'une panne locale.",
+        choices:[
+          {label:"Purger tout de suite", text:"Dégage de la vapeur brûlante dans les coursives.", effects:{threat:-6, bonus:["Vapeur étouffante"], malus:["Réseau noirci"]}},
+          {label:"Reporter et surveiller", text:"On gagne du temps, mais la pression monte.", effects:{threat:+3}},
+          {label:"Réacheminer vers les macro-canons", text:"Les tubes chauffent à blanc.", effects:{threat:-2, bonus:["Tir de barrage"]}},
+          {label:"Ignorer l'alarme", text:"Prières et rubans bénis. Qu'est-ce qui pourrait mal tourner ?", effects:{threat:+8, malus:["Panne sporadique"]}}
+        ]
+      },
+      {
+        title:"Signal xéno",
+        text:"Un chœur psychique hurle à l'horizon. Les ombres s'agitent.",
+        choices:[
+          {label:"Eriger des contre‑champs", text:"Technaugures au travail.", effects:{threat:-4, bonus:["Ecran de brouillage"], spawnMod:{addSynapse:false}}},
+          {label:"Consolider les lignes", text:"On attend le choc.", effects:{threat:+0}},
+          {label:"Raid téméraire", text:"Sortie blindée dans le no man's land.", effects:{threat:-3, bonus:["Butin biomasse"], spawnMod:{multiplier:0.9}}},
+          {label:"Silence radio", text:"On coupe tout. Le chœur enfle…", effects:{threat:+6, spawnMod:{addApex:true}}}
+        ]
+      },
+      {
+        title:"Pluie sporicide",
+        text:"Le ciel vomit des spores. La visibilité chute.",
+        choices:[
+          {label:"Allumer les balises", text:"Phare de combat.", effects:{threat:-2, bonus:["Balises actives"], spawnMod:{multiplier:0.95}}},
+          {label:"Rester à couvert", text:"On plie sans rompre.", effects:{threat:+1}},
+          {label:"Brûler l'atmosphère", text:"Torches et prométhium.", effects:{threat:-5, malus:["Consommables vides"]}},
+          {label:"Laisser tomber", text:"Que l'Empereur décide.", effects:{threat:+5}}
+        ]
+      },
+      {
+        title:"Munitions sanctifiées",
+        text:"Un prêtre de guerre offre des chargeurs bénis.",
+        choices:[
+          {label:"Armer les sentinelles", text:"Postes clés renforcés.", effects:{threat:-3, bonus:["Munitions bénies"]}},
+          {label:"Doter les vétérans", text:"Élite uniquement.", effects:{threat:-1, bonus:["Tirs précis"]}},
+          {label:"Répartir équitablement", text:"Tous un peu mieux.", effects:{threat:-2}},
+          {label:"Refuser ce zèle", text:"Le rationnement prime.", effects:{threat:+2, malus:["Moral dubitatif"]}}
+        ]
+      },
+      {
+        title:"Coulées de chitine",
+        text:"Des tunnels affleurent sous la plateforme.",
+        choices:[
+          {label:"Dynamiter les accès", text:"Les sapes s'effondrent.", effects:{threat:-4}},
+          {label:"Piéger et observer", text:"Apprendre leurs routes.", effects:{threat:-2, bonus:["Schéma des galeries"]}},
+          {label:"Descente punitive", text:"Escouade téméraire.", effects:{threat:-5, malus:["Blessures"], spawnMod:{multiplier:0.85}}},
+          {label:"Laisser filer", text:"On garde nos forces.", effects:{threat:+3, spawnMod:{addHigh:true}}}
+        ]
+      },
+      {
+        title:"Astre tapeur",
+        text:"Éruption solaire mineure : instruments affolés.",
+        choices:[
+          {label:"Blindage magnétique", text:"Crissements dans les bobines.", effects:{threat:-1}},
+          {label:"Calibrer au jugé", text:"Tireurs au feeling.", effects:{threat:+1, bonus:["Adrénaline"]}},
+          {label:"Prière machine", text:"Litanies sur les cogitateurs.", effects:{threat:-2}},
+          {label:"Ignorer", text:"On continue.", effects:{threat:+3}}
+        ]
+      },
+      {
+        title:"Évacuation civique",
+        text:"Des civils encombrent les quais.",
+        choices:[
+          {label:"Sécuriser un couloir", text:"Une brèche dégagée.", effects:{threat:-3}},
+          {label:"Recruter des auxiliaires", text:"Bras tremblants mais utiles.", effects:{threat:-1, bonus:["Milice"]}},
+          {label:"Priorité front", text:"On repousse et basta.", effects:{threat:+2, malus:["Tensions internes"]}},
+          {label:"Hâtez‑vous !", text:"Procession en panique.", effects:{threat:+4}}
+        ]
+      }
+    ];
+
+    // ======= RNG à seed =======
+    function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296}}
+    function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+
+    // ======= État =======
+    const STATE = {
+      turn:1,
+      threat:20,
+      planet:"Helios‑IX",
+      defenders:6,
+      bonuses:[],
+      maluses:[],
+      seed:"",
+      events:[],
+      log:[]
+    };
+
+    const els = {
+      planetName: document.getElementById('planetName'),
+      seedShow: document.getElementById('seedShow'),
+      turn: document.getElementById('turn'),
+      threatVal: document.getElementById('threatVal'),
+      menaceBar: document.getElementById('menaceBar'),
+      waveSize: document.getElementById('waveSize'),
+      waveHint: document.getElementById('waveHint'),
+      mods: document.getElementById('mods'),
+      modsEmpty: document.getElementById('modsEmpty'),
+      choices: document.getElementById('choices'),
+      eventTitle: document.getElementById('eventTitle'),
+      eventText: document.getElementById('eventText'),
+      wave: document.getElementById('wave'),
+      log: document.getElementById('log'),
+      btnNext: document.getElementById('btnNext'),
+      btnReroll: document.getElementById('btnReroll'),
+      btnGenWave: document.getElementById('btnGenWave'),
+      btnExport: document.getElementById('btnExport'),
+      btnImport: document.getElementById('btnImport'),
+      btnReset: document.getElementById('btnReset'),
+      // admin
+      inpPlanet: document.getElementById('inpPlanet'),
+      inpThreat: document.getElementById('inpThreat'),
+      inpSeed: document.getElementById('inpSeed'),
+      inpCustomEvent: document.getElementById('inpCustomEvent'),
+      btnAddEvent: document.getElementById('btnAddEvent'),
+      btnClearEvents: document.getElementById('btnClearEvents'),
+      btnCollapseAdmin: document.getElementById('btnCollapseAdmin')
+    };
+
+    let RNG = mulberry32(Date.now()|0);
+
+    // ======= Helpers =======
+    function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
+    function pick(arr){return arr[Math.floor(RNG()*arr.length)]}
+    function formatWaveList(list){
+      const map = new Map();
+      list.forEach(n=>map.set(n,(map.get(n)||0)+1));
+      return [...map.entries()].map(([name,count])=>`${name} ×${count}`).join(', ');
+    }
+
+    // ======= Menace → taille de vague & table d'unités =======
+    function waveInfo(threat){
+      const mult = 1 + (STATE.bonuses.includes('Milice')?0.0:0); // place-holder pour effets futurs
+      const base = Math.floor(threat/8) + 1; // 1 à 13 env
+      const swing = Math.floor(RNG()*3); // 0-2
+      let size = Math.max(1, Math.round((base + swing) * mult));
+      let band = 'low';
+      if(threat>=25) band='mid';
+      if(threat>=55) band='high';
+      if(threat>=80) band='apex';
+      return {size, band};
+    }
+
+    function rollWave(){
+      const {size, band} = waveInfo(STATE.threat);
+      const picks = [];
+      for(let i=0;i<size;i++){
+        const bandList = band==='apex' ? [...UNITS.high, ...UNITS.apex] : band==='high' ? [...UNITS.mid, ...UNITS.high] : band==='mid' ? [...UNITS.low, ...UNITS.mid] : [...UNITS.low];
+        picks.push(pick(bandList));
+      }
+      return {size, band, units:picks};
+    }
+
+    // ======= Événements =======
+    function currentLibrary(){
+      const custom = JSON.parse(localStorage.getItem('w40k_events_custom')||'[]');
+      return [...EVENTS_BASE, ...custom];
+    }
+
+    function nextEvent(){
+      const lib = currentLibrary();
+      const ev = JSON.parse(JSON.stringify(pick(lib))); // deep copy simple
+      renderEvent(ev);
+      STATE._currentEvent = ev;
+      save();
+    }
+
+    function renderEvent(ev){
+      els.eventTitle.textContent = ev.title;
+      els.eventText.textContent = ev.text;
+      els.choices.innerHTML = '';
+      const need = 4 - ev.choices.length;
+      if(need>0){ // si l'auteur a oublié de mettre 4 choix, compléter par défaut
+        for(let i=0;i<need;i++) ev.choices.push({label:"Option", text:"Décision improvisée.", effects:{threat:+1}});
+      }
+      ev.choices.slice(0,4).forEach((c,idx)=>{
+        const div = document.createElement('div');
+        div.className='choice';
+        div.innerHTML = `<h4>${c.label}</h4><p>${c.text}</p><button class="btn-primary">Choisir</button>`;
+        div.querySelector('button').addEventListener('click', ()=>applyChoice(ev, c));
+        els.choices.appendChild(div);
+      });
+    }
+
+    function applyChoice(ev, choice){
+      const eff = normalizeEffects(choice.effects||{});
+      const before = STATE.threat;
+      STATE.threat = clamp(STATE.threat + (eff.threat||0), 0, 100);
+      if(eff.bonus) eff.bonus.forEach(b=>!STATE.bonuses.includes(b)&&STATE.bonuses.push(b));
+      if(eff.malus) eff.malus.forEach(m=>!STATE.maluses.includes(m)&&STATE.maluses.push(m));  id: string;
   title: string;
   body: string; // narrative, may include {DEF} {ATT}
   hidden?: string; // optional hidden description
