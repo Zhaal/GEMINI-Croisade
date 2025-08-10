@@ -575,6 +575,9 @@ const restartBtn    = document.getElementById("restartBtn");
 const logEl         = document.getElementById("log");
 const badgeTourEl   = document.getElementById("badgeTour");
 const badgePhaseEl  = document.getElementById("badgePhase");
+const startScreen   = document.getElementById("startScreen");
+const startBtn      = document.getElementById("startBtn");
+const gameEl        = document.getElementById("game");
 
 // --- Utils ---
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
@@ -589,17 +592,37 @@ function init() {
   phaseIndex = 0;
   logEl.innerHTML = "";
   lastTagEl.textContent = "—";
+  nextBtn.textContent = "En attente de la prochaine étape";
+  nextBtn.style.display = "none";
+  nextBtn.disabled = true;
   updateHUD();
   afficherPhase();
 }
-init();
+
+startBtn.addEventListener("click", () => {
+  startScreen.style.display = "none";
+  gameEl.style.display = "";
+  init();
+});
 
 // --- Affichage d’une phase ---
+function typeNarration(text, cb) {
+  const words = text.split(" ");
+  narrationEl.textContent = "";
+  let i = 0;
+  const it = setInterval(() => {
+    narrationEl.textContent += (i > 0 ? " " : "") + words[i++];
+    if (i >= words.length) {
+      clearInterval(it);
+      if (cb) cb();
+    }
+  }, 300);
+}
+
 function afficherPhase() {
   const p = phases[phaseIndex];
   if (!p) return finDePartie();
 
-  narrationEl.textContent = p.narration;
   phaseTitleEl.textContent = p.phase;
   badgeTourEl.textContent = `Tour ${p.tour}`;
   badgePhaseEl.textContent = p.phase;
@@ -614,8 +637,15 @@ function afficherPhase() {
     btn.addEventListener("click", () => choisir(c));
     choicesEl.appendChild(btn);
   });
+  choicesEl.style.display = "none";
+  choicesEl.style.pointerEvents = "auto";
 
+  nextBtn.style.display = "none";
   nextBtn.disabled = true;
+
+  typeNarration(p.narration, () => {
+    choicesEl.style.display = "flex";
+  });
 }
 
 // --- Application d’un choix ---
@@ -643,6 +673,7 @@ function choisir(choix) {
   setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 4000);
 
   nextBtn.disabled = false;
+  choicesEl.style.pointerEvents = "none";
 }
 
 // --- HUD ---
@@ -657,12 +688,19 @@ function updateHUD() {
 function showModal(state) {
   modal.classList.toggle("show", !!state);
 }
-modalOk.addEventListener("click", () => showModal(false));
+modalOk.addEventListener("click", () => {
+  showModal(false);
+  nextBtn.style.display = "";
+});
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && modal.classList.contains("show")) showModal(false);
+  if (e.key === "Enter" && modal.classList.contains("show")) {
+    showModal(false);
+    nextBtn.style.display = "";
+  }
 });
 
 nextBtn.addEventListener("click", () => {
+  nextBtn.style.display = "none";
   if (phaseIndex < phases.length - 1) {
     phaseIndex++;
     afficherPhase();
