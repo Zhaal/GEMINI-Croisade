@@ -283,6 +283,14 @@ header .controls {
   margin: .5em 0 1em;
 }
 
+#fluff {
+  font-size: 1.2em;
+}
+
+#bonus {
+  margin-top: 1em;
+}
+
 .deco {
   position: fixed;
   inset: 0;

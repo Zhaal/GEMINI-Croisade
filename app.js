@@ -625,23 +625,22 @@ function choisir(choix) {
   menace += choix.effet.menace || 0;
   tyr    += choix.effet.tyr    || 0;
   updateHUD();
+  const eff = [];
+  if (choix.effet.menace) eff.push(`Menace ${choix.effet.menace > 0 ? "+" : ""}${choix.effet.menace}`);
+  if (choix.effet.tyr)    eff.push(`Arrivées Tyranides ${choix.effet.tyr > 0 ? "+" : ""}${choix.effet.tyr}`);
+  const effStr = eff.length ? `Effets : ${eff.join(" | ")}` : "";
 
   const line = document.createElement("div");
-  line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte}`;
+  line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte}<div class="meta">${choix.fluff}</div><div class="meta"><em>${choix.bonus}</em></div>${effStr ? `<div class="meta">${effStr}</div>` : ""}`;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 
   modalTitle.textContent = choix.texte;
-  const eff = [];
-  if (choix.effet.menace) eff.push(`Menace ${choix.effet.menace > 0 ? "+" : ""}${choix.effet.menace}`);
-  if (choix.effet.tyr)    eff.push(`Arrivées Tyranides ${choix.effet.tyr > 0 ? "+" : ""}${choix.effet.tyr}`);
-  const effStr = eff.length ? `Effets appliqués : ${eff.join(" | ")}` : "Aucun effet numérique.";
-  modalText.innerHTML = `<p id="fluff" class="wow">${choix.fluff}</p><p id="bonus" class="wow hidden"><em>${choix.bonus}</em></p><p id="eff" class="meta wow hidden">${effStr}</p>`;
-  modalMeta.textContent = `Totaux → Menace ${menace} | Arrivées ${tyr}`;
+  modalText.innerHTML = `<p id="fluff" class="wow">${choix.fluff}</p><p id="bonus" class="wow hidden"><em>${choix.bonus}</em></p>`;
+  modalMeta.textContent = "";
   lastTagEl.textContent = eff.length ? eff.join(" | ") : "—";
   showModal(true);
-  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 1000);
-  setTimeout(() => document.getElementById("eff").classList.remove("hidden"), 2000);
+  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 4000);
 
   nextBtn.disabled = false;
 }
