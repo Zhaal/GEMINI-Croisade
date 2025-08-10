@@ -1,0 +1,278 @@
+/* --- THEME WARHAMMER 40K --- */
+
+/* --- Polices --- */
+:root {
+  --font-title: 'UnifrakturCook', cursive;
+  --font-body: 'Special Elite', monospace;
+
+  --color-parchment: #c5b49a;
+  --color-parchment-dark: #a18f71;
+  --color-text: #3d352a;
+  --color-red: #8a0303;
+  --color-gold: #d4af37;
+  --color-metal: #4f5858;
+}
+
+body {
+  font-family: var(--font-body);
+  background:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%),
+    radial-gradient(ellipse at center, #c5b49a 0%, #a18f71 100%);
+  color: var(--color-text);
+}
+
+h3, h4 {
+  font-family: var(--font-title);
+  color: var(--color-red);
+  text-shadow: 1px 1px 0px var(--color-parchment-dark);
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+}
+
+/* --- Layout & Panels --- */
+
+.stage, .panel, .modal {
+  background: var(--color-parchment);
+  border: 10px solid;
+  border-image: linear-gradient(to bottom, #7a7a7a, #333) 1;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 15px rgba(0,0,0,0.7);
+  border-radius: 0;
+}
+
+header {
+  background: transparent;
+  border-bottom: 5px solid;
+  border-image: linear-gradient(to right, transparent, var(--color-metal), transparent) 1;
+  padding: 0.5em 1em;
+  color: var(--color-parchment);
+}
+
+header .brand {
+    font-family: var(--font-title);
+    font-size: 2em;
+    color: var(--color-parchment);
+    text-shadow: 2px 2px 5px #000;
+}
+
+/* --- Buttons --- */
+.btn, button {
+  font-family: var(--font-body);
+  background: linear-gradient(to bottom, #5a5a5a, #333);
+  border: 2px outset #666;
+  color: var(--color-parchment);
+  padding: .6em 1.2em;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all .2s;
+  text-shadow: 1px 1px 2px #000;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+}
+
+.btn:hover, button:hover {
+  background: linear-gradient(to top, #5a5a5a, #333);
+  border-color: #888;
+  color: #fff;
+}
+
+.btn:disabled, button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+  border-style: inset;
+}
+
+.btn.secondary {
+  background: linear-gradient(to bottom, #444, #222);
+}
+
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--color-parchment-dark);
+  color: var(--color-text);
+  text-shadow: none;
+}
+
+/* --- Choices --- */
+.choice {
+  background: transparent;
+  border: 1px solid var(--color-parchment-dark);
+  border-left: 5px solid var(--color-red);
+  padding: .7em;
+  border-radius: 0;
+  transition: all .2s;
+}
+
+.choice::before {
+  content: "✠"; /* Maltese Cross, thematic icon */
+  color: var(--color-red);
+  font-size: 1.5em;
+  margin-right: 0.5em;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.choice:hover {
+  background: rgba(0,0,0,0.1);
+  border-color: var(--color-red);
+  transform: translateY(0);
+  box-shadow: 0 0 10px rgba(138, 3, 3, 0.5);
+}
+
+/* --- HUD & Meters --- */
+.hud .panel {
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+}
+
+.bar {
+  background: #333;
+  height: .8em;
+  border-radius: 0;
+  border: 1px solid #222;
+  padding: 2px;
+}
+
+.bar .fill {
+  background: linear-gradient(to right, var(--color-red), #ff0000);
+  box-shadow: 0 0 5px var(--color-red);
+}
+
+.log {
+  background: rgba(0,0,0,0.1);
+  border: 1px solid var(--color-parchment-dark);
+  padding: 0.5em;
+  max-height: 250px;
+}
+
+/* --- Narration & Scanlines --- */
+.narration {
+  background: rgba(0,0,0,0.1);
+  border: 1px solid var(--color-parchment-dark);
+  border-radius: 0;
+  padding: 1.5em;
+  text-align: center;
+  font-size: 1.1em;
+  line-height: 1.6;
+}
+
+.scan {
+  background: linear-gradient(to bottom, transparent 49%, rgba(150, 220, 255, 0.2) 50%, transparent 51%);
+  animation: scan 4s linear infinite, flicker 0.1s infinite alternate;
+}
+
+@keyframes flicker {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+/* --- WOW Effects --- */
+.btn:hover, button:hover {
+  background: linear-gradient(to top, #5a5a5a, #333);
+  border-color: #888;
+  color: #fff;
+  box-shadow: 0 0 15px var(--color-gold);
+}
+
+.modal-backdrop.show .modal {
+  animation: slam .3s ease-out;
+}
+
+@keyframes slam {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-200px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* --- Misc --- */
+.badge {
+  background: var(--color-red);
+  color: var(--color-parchment);
+  border-radius: 0;
+  text-shadow: 1px 1px 1px #000;
+}
+
+.badge .dot {
+    background: #ffc;
+}
+
+.tag {
+  background: var(--color-metal);
+  color: var(--color-parchment);
+  border-radius: 0;
+}
+
+.deco {
+  /* Using a pseudo-element for a texture overlay instead of a broken image link */
+  position: fixed;
+  inset: 0;
+  background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAAXNSR0IArs4c6QAAABNJREFUGFdjZGRiZqAEn////w8AHTsB9Td24coAAAAASUVORK5CYII='); /* Subtle noise texture */
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* --- Decorative Elements --- */
+.wrap {
+  position: relative;
+}
+
+.corner-deco {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border: 5px solid #333;
+  background: linear-gradient(45deg, #5a5a5a, #333);
+}
+.corner-deco::after {
+  content: '●';
+  position: absolute;
+  font-size: 0.5em;
+  color: #222;
+}
+
+.corner-top-left {
+  top: 0;
+  left: 0;
+  border-right-width: 0;
+  border-bottom-width: 0;
+}
+.corner-top-left::after {
+  bottom: 2px;
+  right: 2px;
+}
+
+.corner-top-right {
+  top: 0;
+  right: 0;
+  border-left-width: 0;
+  border-bottom-width: 0;
+}
+.corner-top-right::after {
+    bottom: 2px;
+    left: 2px;
+}
+
+.corner-bottom-left {
+  bottom: 0;
+  left: 0;
+  border-right-width: 0;
+  border-top-width: 0;
+}
+.corner-bottom-left::after {
+    top: 2px;
+    right: 2px;
+}
+
+.corner-bottom-right {
+  bottom: 0;
+  right: 0;
+  border-left-width: 0;
+  border-top-width: 0;
+}
+.corner-bottom-right::after {
+    top: 2px;
+    left: 2px;
+}

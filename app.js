@@ -607,12 +607,17 @@ startBtn.addEventListener("click", () => {
 
 // --- Affichage d’une phase ---
 function typeNarration(text, cb) {
-  narrationEl.textContent = text;
-  narrationEl.classList.remove("wow");
-  // Force reflow to restart the animation if it was already applied
-  void narrationEl.offsetWidth;
-  narrationEl.classList.add("wow");
-  if (cb) narrationEl.addEventListener("animationend", cb, { once: true });
+  narrationEl.textContent = "";
+  let i = 0;
+  const interval = setInterval(() => {
+    if (i < text.length) {
+      narrationEl.textContent += text.charAt(i);
+      i++;
+    } else {
+      clearInterval(interval);
+      if (cb) cb();
+    }
+  }, 20); // Vitesse de frappe
 }
 
 function afficherPhase() {
