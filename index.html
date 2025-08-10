@@ -1,567 +1,81 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Bastion Kheprios – Assaut Tyranide (5 rounds) ⚠️</title>
-  <style>
-    /* ===== THEME ===== */
-    :root{
-      --bg:#07070b; --panel:#101019; --ink:#eef0f8; --muted:#a6a7b3;
-      --accent:#c9ad6a; --warn:#f6c453; --danger:#ff3b3b; --good:#2bde73;
-      --tile:#141425; --line:#2a2a44; --chip:#0b0b16; --shadow:0 12px 40px rgba(0,0,0,.45);
-      --neon:#5af2ff; --neon2:#a0ff6a;
-    }
-    html,body{height:100%}
-    body{margin:0;background:#05050a;color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;overflow:hidden}
-
-    /* Animated starfield backdrop */
-    #fx-stars{position:fixed;inset:0;z-index:-2;background:radial-gradient(1200px 700px at 70% -20%, #191929 0%, #07070b 70%)}
-    canvas#fx-particles{position:fixed;inset:0;z-index:-1;pointer-events:none}
-
-    .app{display:grid;grid-template-columns:360px 1fr 380px;gap:16px;min-height:100vh;padding:20px;box-sizing:border-box}
-    header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:14px 18px;background:linear-gradient(180deg,#16162a,#12121c);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;position:relative;overflow:hidden}
-    header .scan{position:absolute;inset:-60% -40%;background:conic-gradient(from 0deg at 50% 50%, transparent 0 70%, rgba(90,242,255,.06) 72% 74%, transparent 76% 100%);animation:radar 6s linear infinite;mix-blend-mode:screen;pointer-events:none}
-    @keyframes radar{to{transform:rotate(360deg)}}
-
-    header .badge{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-size:12px;color:var(--muted)}
-    header h1{margin:0;font-size:22px;letter-spacing:.3px}
-    header .spacer{flex:1}
-    header .controls{display:flex;gap:8px}
-
-    button{appearance:none;border:1px solid var(--line);background:linear-gradient(180deg,#1b1b2a,#13131e);color:var(--ink);padding:10px 12px;border-radius:12px;cursor:pointer;transition:transform .05s ease, border-color .2s ease, box-shadow .2s ease;box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
-    button:hover{border-color:#3a3a56;box-shadow:0 0 24px rgba(160,255,106,.12)}
-    button:active{transform:translateY(1px)}
-    .btn-danger{border-color:#4a1a22;background:linear-gradient(180deg,#251219,#190c12);color:#ef9aa7}
-    .btn-ghost{background:#0b0b14}
-
-    .panel{background:linear-gradient(180deg,#141428,#0f0f1a);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(1.1) blur(2px)}
-    .panel h2{margin:0 0 10px 0;font-size:14px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
-    .left,.center,.right{padding:16px;overflow:auto}
-
-    .stat{display:grid;grid-template-columns:140px 1fr;gap:8px;margin:10px 0}
-
-    /* Neon segmented meter */
-    .threat-wrap{display:grid;gap:8px}
-    .segments{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
-    .seg{height:12px;border:1px solid #2f2f55;border-radius:6px;box-shadow:inset 0 0 10px rgba(0,0,0,.6)}
-    .seg.on{background:linear-gradient(180deg, rgba(90,242,255,.9), rgba(90,242,255,.25));box-shadow:0 0 14px rgba(90,242,255,.7), inset 0 0 10px rgba(0,0,0,.4)}
-    .seg.warn{background:linear-gradient(180deg, rgba(246,196,83,.9), rgba(246,196,83,.25));box-shadow:0 0 14px rgba(246,196,83,.6)}
-    .seg.danger{background:linear-gradient(180deg, rgba(255,59,59,.95), rgba(255,59,59,.3));box-shadow:0 0 16px rgba(255,59,59,.7)}
-
-    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px}
-
-    .narrative{background:var(--tile);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;min-height:120px;position:relative}
-    .typewriter{--caret: currentColor}
-    .typewriter::after{content:"_";animation:blink 1s steps(1) infinite;color:var(--neon)}
-    @keyframes blink{50%{opacity:0}}
-
-    .phase-title{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px}
-    .phase-name{font-weight:800;letter-spacing:.06em}
-    .phase-sub{color:var(--muted);font-size:13px}
-
-    /* Cinematic choices */
-    .choices{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
-    .choice{border:1px solid var(--line);background:linear-gradient(180deg,#1a1a2c,#12121c);padding:14px;border-radius:12px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden}
-    .choice .glow{position:absolute;inset:-200% -100%;background:radial-gradient(circle at var(--x,20%) var(--y,30%), rgba(160,255,106,.06), transparent 40%);pointer-events:none}
-    .choice .dot{width:10px;height:10px;border-radius:50%;background:#3a3a56;margin-top:6px}
-    .choice:hover{border-color:#4a4a76}
-    .choice h3{margin:0;font-size:15px}
-    .choice p{margin:4px 0 0 0;color:var(--muted);font-size:13px}
-
-    .result{margin-top:12px;border:1px dashed #3a3a56;border-radius:12px;padding:14px;background:#13131b}
-    .result h4{margin:0 0 6px 0;font-size:14px}
-    .result ul{margin:8px 0 0 18px}
-
-    .log{height:calc(100vh - 160px);overflow:auto;background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:12px;white-space:pre-wrap}
-    .log-entry{border-bottom:1px dashed #2b2b3f;padding:10px 0}
-    .muted{color:var(--muted)}
-
-    .footer{grid-column:1/-1;color:var(--muted);font-size:12px;text-align:center;padding:12px}
-
-    /* Toast / VOX */
-    .toast{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;flex-direction:column;gap:10px}
-    .toast .t{background:#0b0b16;border:1px solid var(--line);padding:10px 12px;border-radius:10px;box-shadow:var(--shadow);max-width:360px}
-
-    /* Siren strip */
-    .siren{grid-column:1/-1;display:grid;grid-template-columns:repeat(16,1fr);gap:6px;margin-top:-8px;margin-bottom:8px}
-    .siren div{height:6px;background:#28111a;border-radius:4px}
-    .siren div.on{background:linear-gradient(90deg,#ff3b3b,#ffa8a8);box-shadow:0 0 18px rgba(255,59,59,.7)}
-
-    /* Screen shake */
-    .shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both}
-    @keyframes shake{10%,90%{transform:translate3d(-1px,0,0)}20%,80%{transform:translate3d(2px,0,0)}30%,50%,70%{transform:translate3d(-4px,0,0)}40%,60%{transform:translate3d(4px,0,0)}}
-
-    /* Intro overlay */
-    .intro{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(1200px 700px at 50% -20%, rgba(90,242,255,.08), rgba(0,0,0,.88) 60%);backdrop-filter:blur(2px)}
-    .intro .card{background:linear-gradient(180deg,#17172a,#0d0d16);border:1px solid var(--line);border-radius:16px;padding:26px 24px;text-align:center;max-width:720px;box-shadow:var(--shadow)}
-    .intro h1{margin:0 0 8px;font-size:28px;letter-spacing:.12em}
-    .intro p{margin:0 0 14px;color:var(--muted)}
-
-    /* Victory/Defeat banner */
-    .banner{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(0,0,0,.6);backdrop-filter:blur(2px)}
-    .banner .card{background:linear-gradient(180deg,#1a1a2e,#0c0c14);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:720px;text-align:center}
-    .banner h2{margin:0 0 10px}
-
-    @media (max-width:1180px){
-      .app{grid-template-columns:1fr;}
-      .right{order:3}
-      .left{order:2}
-      .center{order:1}
-      .log{height:40vh}
-      body{overflow:auto}
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warhammer 40k — Bataille Narrative : Le Promontoire</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="fx-stars"></div>
-  <canvas id="fx-particles"></canvas>
 
-  <div class="app" id="root">
-    <div class="siren" id="siren"></div>
-
-    <header id="hdr">
-      <div class="scan"></div>
-      <div class="badge">⚙️ Monde-forge <span class="muted">Aegis Prime</span></div>
-      <h1>Bastion Kheprios — Assaut Tyranide</h1>
-      <div class="spacer"></div>
-      <div class="controls">
-        <button id="btnSound" class="btn-ghost" title="Activer l’audio">🔊 Son : OFF</button>
-        <button id="btnExport" title="Exporter le journal">📄 Exporter</button>
-        <button id="btnReset" class="btn-danger" title="Réinitialiser la partie">♻️ Réinitialiser</button>
-      </div>
-    </header>
-
-    <!-- LEFT: Status -->
-    <section class="panel left" id="left">
-      <h2>Situation</h2>
-      <div class="stat"><div>Round</div><div><span id="round" class="chip">1 / 5</span></div></div>
-      <div class="stat"><div>Phase</div><div><span id="phase" class="chip">Commandement</span></div></div>
-      <div class="stat">
-        <div>Menace</div>
-        <div class="threat-wrap">
-          <div class="segments" id="segments"></div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:2px">
-            <span>0</span><span>5</span><span>10</span>
-          </div>
-        </div>
-      </div>
-      <div class="stat"><div>Renforts prochains</div><div><span id="reinforce" class="chip">—</span></div></div>
-      <div class="stat"><div>Indicateurs</div><div id="flags" class="muted">Aucun</div></div>
-
-      <div style="margin-top:12px">
-        <h2>Rappels en jeu</h2>
-        <ul class="muted" style="margin-top:6px">
-          <li>Appliquez les <b>effets</b> indiqués sous « À appliquer sur la table » dès qu’un choix est validé.</li>
-          <li>Les bonus/malus ne sont révélés <b>qu’après</b> le clic.</li>
-          <li>La <b>menace</b> ajuste le nombre de renforts tyranides au <em>tour suivant</em>.</li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- CENTER: Narrative & Choices -->
-    <main class="panel center">
-      <h2>Narration</h2>
-      <div id="story" class="narrative typewriter"></div>
-      <div class="phase-title">
-        <div class="phase-name" id="phaseName">Phase de Commandement</div>
-        <div class="phase-sub" id="phaseSub">Choisissez 1 option</div>
-      </div>
-      <div id="choices" class="choices"></div>
-      <div id="result" class="result" style="display:none"></div>
-    </main>
-
-    <!-- RIGHT: Log -->
-    <aside class="panel right">
-      <h2>Journal de mission</h2>
-      <div id="log" class="log" aria-live="polite"></div>
-    </aside>
-
-    <div class="footer">© Campagne narrative — arbitre/narrateur. Thème non officiel. Effets spéciaux intégrés ✦</div>
+<header>
+  <div class="brand">⚔️ <b>Le Promontoire</b> — Bataille narrative 40k</div>
+  <div class="controls">
+    <label class="toggle"><input id="sfxToggle" type="checkbox" checked/> Effets sonores</label>
+    <button class="btn secondary" id="restartBtn" title="Recommencer">Recommencer</button>
+    <button class="btn" id="nextBtn" title="Phase suivante" disabled>Phase suivante ▷</button>
   </div>
+</header>
 
-  <!-- Intro cinematic overlay -->
-  <div class="intro" id="intro">
-    <div class="card">
-      <h1>IN NOMINE IMPERATORIS</h1>
-      <p>Le Bastion Kheprios appelle tous les commandants. Une nuée tyranide approche. Tenez cinq rounds ou soyez dévorés.</p>
-      <button id="start">Lancer la mission</button>
+<div class="wrap">
+  <section class="stage">
+    <div class="stage-header">
+      <span class="badge"><span class="dot"></span><span id="badgeTour">Tour 1</span></span>
+      <span class="meta" id="badgePhase">Phase de Commandement</span>
+      <span class="meta">Ordre des choix mélangé à chaque phase.</span>
+    </div>
+
+    <div class="narration">
+      <div class="scan"></div>
+      <div class="narr-text" id="narration"></div>
+    </div>
+    <div class="phase-title" id="phaseTitle"></div>
+    <div class="choices" id="choices"></div>
+
+    <div class="footer-controls">
+      <button class="btn ghost" id="skipBtn" title="Afficher un autre ordre de choix (sans changer la phase)">Remélanger</button>
+    </div>
+  </section>
+
+  <aside class="hud">
+    <div class="panel">
+      <h3>État de la bataille</h3>
+      <div class="stats">
+        <div class="meter">
+          <div class="statline"><span>Menace</span><span><b id="menaceVal">0</b></span></div>
+          <div class="bar"><div id="menaceFill" class="fill" style="width:12%"></div></div>
+        </div>
+        <div class="meter">
+          <div class="statline"><span>Arrivées Tyranides (indicatif)</span><span><b id="tyrVal">0</b></span></div>
+          <div class="bar"><div id="tyrFill" class="fill" style="width:8%"></div></div>
+        </div>
+        <div class="statline"><span>Phase</span><span id="hudPhase">1 / 15</span></div>
+        <div class="statline"><span>Dernière résolution</span><span id="lastTag" class="tag">—</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Journal</h3>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h4 id="modalTitle">Résolution</h4>
+    <div class="fx" id="modalText"></div>
+    <div class="meta" id="modalMeta"></div>
+    <div class="row">
+      <span class="kbd">Entrée</span>
+      <button class="btn" id="modalOk">OK</button>
     </div>
   </div>
+</div>
 
-  <div class="toast" id="toast"></div>
+<div class="deco"></div>
 
-  <!-- Victory/Defeat banner (hidden) -->
-  <div class="banner" id="banner" style="display:none"></div>
-
-  <script>
-  // ===== AUDIO (no external files: generated beeps & small loops) =====
-  let audioOn = false;
-  let ctx, master, sirenOsc, padOsc;
-
-  function initAudio(){
-    if (ctx) return;
-    ctx = new (window.AudioContext || window.webkitAudioContext)();
-    master = ctx.createGain(); master.gain.value = 0.6; master.connect(ctx.destination);
-  }
-  function beep(freq=440, dur=0.12, vol=0.2){
-    if (!audioOn || !ctx) return;
-    const o = ctx.createOscillator(); const g = ctx.createGain();
-    o.type = 'square'; o.frequency.value = freq; g.gain.value = vol;
-    o.connect(g); g.connect(master); o.start(); g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur); o.stop(ctx.currentTime + dur);
-  }
-  function menaceStinger(up=true){
-    if (!audioOn || !ctx) return;
-    const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sawtooth';
-    o.frequency.setValueAtTime(up?220:440, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(up?880:110, ctx.currentTime+0.4);
-    g.gain.value=0.15; o.connect(g); g.connect(master); o.start(); o.stop(ctx.currentTime+0.45);
-  }
-  function startPad(){
-    if (!audioOn || padOsc) return;
-    padOsc = ctx.createOscillator(); const g = ctx.createGain();
-    padOsc.type = 'sine'; padOsc.frequency.value = 110; g.gain.value = 0.04;
-    padOsc.connect(g); g.connect(master); padOsc.start();
-  }
-  function stopPad(){ if (padOsc){ padOsc.stop(); padOsc.disconnect(); padOsc=null; } }
-
-  // ===== PARTICLES / STARS =====
-  const cvs = document.getElementById('fx-particles');
-  const c = cvs.getContext('2d');
-  let W,H,parts=[];
-  function resize(){ W = cvs.width = window.innerWidth; H = cvs.height = window.innerHeight; }
-  window.addEventListener('resize', resize); resize();
-  function spawn(n=120){
-    parts = Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,v:(.2+Math.random()*1.2),s:Math.random()*1.6+0.2}))
-  }
-  spawn(140);
-  function loop(){
-    c.clearRect(0,0,W,H);
-    c.fillStyle = 'rgba(255,255,255,.7)';
-    parts.forEach(p=>{ c.globalAlpha = 0.3+Math.random()*0.7; c.fillRect(p.x,p.y,p.s,p.s); p.y += p.v; if (p.y>H) {p.y=-5;p.x=Math.random()*W;} });
-    requestAnimationFrame(loop);
-  } loop();
-
-  // ===== DATA MODEL =====
-  const MAX_ROUNDS = 5;
-  const PHASES = ["Commandement", "Charge", "Ébranlement"]; // ordre fixe
-
-  function reinforcementsFor(threat){
-    if (threat <= 2) return {units:1, note:"escarmouche"};
-    if (threat <= 4) return {units:3, note:"vague mineure"};
-    if (threat <= 6) return {units:5, note:"attaque majeure"};
-    if (threat <= 8) return {units:7, note:"marée vorace"};
-    return {units:10, note:"assaut total + 1 monstre"};
-  }
-
-  const ROUND_INTROS = [
-    "Les auspex hurlent. Des signatures biomorphes émergent de la haute atmosphère. Les équipes verrouillent les sas du Bastion Kheprios.",
-    "Des spores-pluie martèlent la coque. Les premières vrilles xenos testent les défenses, cherchant une faille dans les corridors extérieurs.",
-    "La coque grince. Des bio-plasma fondent l’acier. Les commandants doivent choisir où tenir et où céder pour gagner du temps.",
-    "Des nœuds synaptiques dirigent désormais l’assaut. La nuée s’adapte, feinte, et frappe là où la résistance vacille.",
-    "Le cœur du Bastion bat au rouge. Dans les galeries inférieures, tout devient une seule décision : tenir… ou être dévoré."
-  ];
-
-  const CHOICES = {
-    Commandement: [
-      { id:"def_ext", title:"Renforcer les défenses extérieures", threat:+1, effects:[
-          "Jusqu’à la fin du tour, toutes les unités AMIES qui tiennent un objectif gagnent +1 à la sauvegarde.",
-          "Notez la hausse de menace pour les renforts tyranides du prochain tour." ] },
-      { id:"intercept", title:"Envoyer un détachement d’interception", threat:-1, effects:[
-          "Choisissez une unité d’INFANTERIE AMIE : retirez-la du champ de bataille maintenant. À la fin de la phase de Charge ENNEMIE, elle arrive comme RÉSERVE STRATÉGIQUE à >6'' d’un bord et >9'' des ennemis.",
-          "Menace -1 (moins de pression immédiate)." ] },
-      { id:"batteries", title:"Surcharger les batteries d’armes orbitales", threat:0, effects:[
-          "Au début de votre prochaine phase de TIR, choisissez 1 unité ennemie visible : infligez D3 Blessures Mortelles.",
-          "La menace n’évolue pas." ] },
-      { id:"evac", title:"Organiser l’évacuation de civils", threat:-2, effects:[
-          "Retirez une unité d’INFANTERIE AMIE (elle escorte) : elle ne peut pas agir ce tour.",
-          "Si la zone d’extraction est attaquée ce tour, jetez 1D6 : sur 1-2, perdez 1 PC (panique et pertes).",
-          "Menace -2 si l’extraction n’est pas interrompue." ] }
-    ],
-    Charge: [
-      { id:"assault", title:"Contre-attaque fulgurante", threat:+1, effects:[
-          "Jusqu’à la fin du tour, les unités AMIES qui déclarent une charge gagnent +1 Attaque.",
-          "Menace +1 (provocation de la nuée)." ] },
-      { id:"lockdown", title:"Verrouiller le secteur", threat:-1, effects:[
-          "Tous les PORTES/PASSAGES clés deviennent BLOQUÉS ce tour : aucun mouvement à travers.",
-          "Menace -1 (ralentissement de la poussée ennemie)." ] },
-      { id:"synapse", title:"Cibler les créatures synapses", threat:-2, effects:[
-          "Si une unité SYNAPSE ennemie est détruite ce tour, toutes les unités TYRANIDES subissent -1 Commandement jusqu’à votre prochain tour.",
-          "Menace -2 (brèche dans la coordination)." ] },
-      { id:"elites", title:"Déployer les réserves d’élite", threat:0, effects:[
-          "Ajoutez immédiatement UNE unité de renfort prédéfinie (terminators, custodes, crisis, etc.) sur un point ami (>9'' des ennemis).",
-          "La menace n’évolue pas." ] }
-    ],
-    Ébranlement: [
-      { id:"repair", title:"Réparer les systèmes critiques", threat:-1, effects:[
-          "Gagnez +1 PC (ou restaurer 1 équipement/stratagème limité).",
-          "Menace -1." ] },
-      { id:"sos", title:"Appel à la flotte de secours", threat:+1, flag:"distress", effects:[
-          "Aucun effet immédiat. Si vous survivez 3 tours APRÈS cet appel, recevez +500 pts de renforts à l’amorce du round suivant.",
-          "Menace +1 (émissions détectées par la nuée)." ] },
-      { id:"sacrifice", title:"Sacrifier un secteur pour gagner du temps", threat:-2, effects:[
-          "Retirez 1 OBJECTIF du champ de bataille (considérez-le PERDU).",
-          "Menace -2 (la nuée se disperse vers la zone incendiée)." ] },
-      { id:"rally", title:"Rallier les troupes", threat:0, effects:[
-          "Jusqu’à la fin du tour, toutes les unités AMIES à 6'' d’un PERSONNAGE gagnent Relance des 1 pour toucher.",
-          "La menace n’évolue pas." ] }
-    ]
-  };
-
-  // ===== STATE =====
-  const state = { round:1, phaseIndex:0, threat:3, flags:{ distressAtRound:null, reinforcementsBonusGranted:false }, log:[] };
-
-  // ===== UI BINDINGS =====
-  const elRound = document.getElementById('round');
-  const elPhase = document.getElementById('phase');
-  const elSegments = document.getElementById('segments');
-  const elReinf = document.getElementById('reinforce');
-  const elFlags = document.getElementById('flags');
-  const elStory = document.getElementById('story');
-  const elPhaseName = document.getElementById('phaseName');
-  const elPhaseSub = document.getElementById('phaseSub');
-  const elChoices = document.getElementById('choices');
-  const elResult = document.getElementById('result');
-  const elLog = document.getElementById('log');
-  const btnReset = document.getElementById('btnReset');
-  const btnExport = document.getElementById('btnExport');
-  const btnSound = document.getElementById('btnSound');
-  const intro = document.getElementById('intro');
-  const banner = document.getElementById('banner');
-  const toast = document.getElementById('toast');
-  const sirenStrip = document.getElementById('siren');
-
-  btnReset.addEventListener('click', () => { if(confirm('Réinitialiser la mission ?')) resetGame(); });
-  btnExport.addEventListener('click', exportLog);
-  btnSound.addEventListener('click', toggleSound);
-  document.getElementById('start').addEventListener('click', ()=>{ intro.remove(); startWow(); render(); pushLog('Mise en alerte : la nuée approche. Menace initiale 3/10.'); vox('Canaux vox synchronisés. Tous les secteurs en niveau CRIMSON.'); });
-
-  // Build threat segments
-  for(let i=0;i<10;i++){ const d=document.createElement('div'); d.className='seg'; elSegments.appendChild(d); }
-
-  // Siren light strip
-  for(let i=0;i<16;i++){ const s=document.createElement('div'); sirenStrip.appendChild(s); }
-
-  function toggleSound(){
-    if (!ctx) initAudio();
-    audioOn = !audioOn; btnSound.textContent = '🔊 Son : ' + (audioOn?'ON':'OFF');
-    if (audioOn) { startPad(); beep(880, .05, .2); } else { stopPad(); }
-  }
-
-  function startWow(){
-    // Animate siren
-    let idx=0; setInterval(()=>{ Array.from(sirenStrip.children).forEach((d,i)=>{ d.classList.toggle('on', (i%4)===idx%4); }); idx++; },140);
-  }
-
-  // ===== RENDERING =====
-  function render(){
-    elRound.textContent = `${state.round} / ${MAX_ROUNDS}`;
-    elPhase.textContent = PHASES[state.phaseIndex];
-
-    // Threat segments
-    Array.from(elSegments.children).forEach((seg,i)=>{
-      const on = i < state.threat; seg.className='seg'; if(on) seg.classList.add('on'); if(i>=6 && on) seg.classList.add('warn'); if(i>=8 && on) seg.classList.add('danger');
-    });
-
-    const reinf = reinforcementsFor(state.threat);
-    elReinf.textContent = `${reinf.units} unités (${reinf.note})`;
-
-    const flagBits = [];
-    if (state.flags.distressAtRound) flagBits.push(`Appel SOS au round ${state.flags.distressAtRound}`);
-    if (state.flags.reinforcementsBonusGranted) flagBits.push(`Renforts +500 pts déverrouillés`);
-    elFlags.textContent = flagBits.length ? flagBits.join(' · ') : 'Aucun';
-
-    // Story intro per round + conditional
-    typewrite(`<p>${ROUND_INTROS[state.round-1] || ROUND_INTROS[ROUND_INTROS.length-1]}</p>` + storyConditional());
-
-    elPhaseName.textContent = `Phase de ${PHASES[state.phaseIndex]}`;
-    elPhaseSub.textContent = `Round ${state.round} — choisissez 1 option`;
-
-    elChoices.innerHTML = '';
-    elResult.style.display = 'none';
-    const list = CHOICES[PHASES[state.phaseIndex]];
-    list.forEach(choice => {
-      const btn = document.createElement('button');
-      btn.className = 'choice';
-      btn.innerHTML = `<div class="glow"></div><div class="dot"></div><div><h3>${choice.title}</h3><p class="muted">Décision irréversible pour ce tour.</p></div>`;
-      btn.addEventListener('pointermove', e=>{ btn.style.setProperty('--x', e.offsetX+'px'); btn.style.setProperty('--y', e.offsetY+'px'); });
-      btn.addEventListener('click', () => selectChoice(choice));
-      elChoices.appendChild(btn);
-    });
-  }
-
-  function storyConditional(){
-    const t = state.threat; let bits = [];
-    if (t <= 2) bits.push("<p>Les bioformes sondent prudemment la coque. Les cogitateurs de défense gagnent un temps précieux.</p>");
-    else if (t <= 4) bits.push("<p>Les premières vagues s’écrasent comme une marée d’acier et de chitine. Les corridors tiennent encore.</p>");
-    else if (t <= 6) bits.push("<p>La pression monte. Des couinements synaptiques résonnent sur les vox. L’ombre de la nuée s’épaissit.</p>");
-    else if (t <= 8) bits.push("<p>La plateforme tremble. Les essaims affluent par grappes et saturent les lignes de tir.</p>");
-    else bits.push("<p><b>ASSAUT TOTAL</b>. Les créatures monstrueuses mènent la charge, ignorant les pertes. Seul le feu purifie.</p>");
-
-    if (state.flags.distressAtRound && !state.flags.reinforcementsBonusGranted){
-      const due = state.flags.distressAtRound + 3;
-      if (state.round >= due){
-        state.flags.reinforcementsBonusGranted = true;
-        pushLog(`✅ Renforts de secours arrivés (+500 pts) suite à l’appel du round ${state.flags.distressAtRound}.`);
-        vox('Transpondeurs alliés confirmés. Renforts en approche orbitale.');
-      }else{
-        bits.push(`<p class=\"muted\">Signal de détresse en attente… T-${due - state.round} round(s) avant arrivée potentielle.</p>`);
-      }
-    }
-    return bits.join('
-');
-  }
-
-  // Typewriter effect
-  let twTimer; function typewrite(html){ clearTimeout(twTimer); elStory.innerHTML=''; const tmp=document.createElement('div'); tmp.innerHTML=html; const text=tmp.textContent; let i=0; (function step(){ elStory.textContent = text.slice(0, i++); if(i<=text.length){ twTimer=setTimeout(step, 10); } })(); }
-
-  function selectChoice(choice){
-    const prevThreat = state.threat;
-    state.threat = Math.max(0, Math.min(10, state.threat + (choice.threat||0)));
-
-    if (choice.flag === 'distress' && !state.flags.distressAtRound){ state.flags.distressAtRound = state.round; vox('⚠️ Canal d’urgence ouvert. Triangulation des relais orbitaux.'); }
-
-    const reinf = reinforcementsFor(state.threat);
-
-    const delta = (choice.threat>0?`+${choice.threat}`:choice.threat);
-    const list = [
-      `<b>Menace</b> : ${prevThreat} → ${state.threat} (${delta||0})`,
-      `<b>Renforts tyranides au prochain tour</b> : ${reinf.units} unités (${reinf.note}).`,
-      '<b>À appliquer sur la table :</b>'
-    ].concat(choice.effects.map(e=>`• ${e}`));
-
-    elResult.style.display = 'block';
-    elResult.innerHTML = `<h4>Décision : ${choice.title}</h4><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-
-    pushLog(
-      `Round ${state.round} — Phase ${PHASES[state.phaseIndex]} — ${choice.title}
-`+
-      `Menace: ${prevThreat} → ${state.threat} (${delta||0})
-`+
-      `Renforts prochains: ${reinf.units} (${reinf.note})
-`+
-      `Effets: 
- - ${choice.effects.join("
- - ")}`
-    );
-
-    // WOW: audio + shake on large change
-    if (audioOn) menaceStinger(state.threat > prevThreat);
-    if (Math.abs(state.threat - prevThreat) >= 2) document.getElementById('root').classList.add('shake'), setTimeout(()=>document.getElementById('root').classList.remove('shake'), 500);
-
-    // Lock choices
-    Array.from(elChoices.children).forEach(btn=>btn.disabled=true);
-
-    // Continue button
-    const cont = document.createElement('div'); cont.style.marginTop='10px';
-    const b = document.createElement('button'); b.textContent = 'Continuer →'; b.addEventListener('click', nextStep); cont.appendChild(b); elResult.appendChild(cont);
-
-    // Vox flavor
-    voxPick(choice.id);
-  }
-
-  function voxPick(id){
-    const lines = {
-      def_ext:["Sections blindées pressurisées. Artillerie en ligne."],
-      intercept:["Détachement en vol. Coordonnées d’interception verrouillées."],
-      batteries:["Batteries orbitales : condensateurs à 97%."],
-      evac:["Civils en déplacement. Itinéraires sanctifiés ouverts."],
-      assault:["Contre-attaque bénie par le trône !"],
-      lockdown:["Cloisons scellées. Couloirs purgés."],
-      synapse:["Cible prioritaire : signatures synaptiques."],
-      elites:["Réserves d’élite déployées. Choc imminent."],
-      repair:["Tech-adeptes à l’œuvre. Rituels de maintenance récités."],
-      sos:["Signal astropathique en émission continue."],
-      sacrifice:["Purge sectorielle. Que l’encens masque les cendres."],
-      rally:["Bannières au vent ! Discipline de fer !"]
-    };
-    vox(lines[id][0]);
-  }
-
-  function nextStep(){
-    if (state.phaseIndex < PHASES.length - 1){
-      state.phaseIndex += 1;
-    } else {
-      endOfRoundSummary();
-      if (state.round < MAX_ROUNDS){ state.round += 1; state.phaseIndex = 0; } else { endOfMission(); return; }
-    }
-    render();
-  }
-
-  function endOfRoundSummary(){
-    const reinf = reinforcementsFor(state.threat);
-    pushLog(`⟲ Fin du round ${state.round}. Menace ${state.threat}. Préparez ${reinf.units} renfort(s) tyranide(s) (${reinf.note}) pour le prochain tour.`);
-    vox(`Fin de round ${state.round}. ${reinf.units} signatures en approche : ${reinf.note}.`);
-  }
-
-  function endOfMission(){
-    const t = state.threat; const reinfBonus = state.flags.reinforcementsBonusGranted;
-    let verdict;
-    if (t >= 9){ verdict = "Victoire tyranide : le Bastion est submergé dans un assaut total."; flare('Défaite', verdict, false); }
-    else if (reinfBonus || t <= 4){ verdict = "Victoire impériale : tenue jusqu’à l’arrivée de la flotte de secours / stabilisation des secteurs."; flare('Victoire', verdict, true); }
-    else { verdict = "Issue incertaine : la plateforme tient, mais au prix de lourdes pertes et de secteurs perdus."; flare('Issue incertaine', verdict, true); }
-
-    const summary = `
-===== FIN DE MISSION =====
-Menace finale: ${t}/10
-${state.flags.reinforcementsBonusGranted?"Renforts de secours reçus (+500 pts).":"Aucun renfort de secours reçu."}
-Verdict: ${verdict}`;
-    pushLog(summary);
-
-    elStory.innerHTML = `<p><b>Fin des 5 rounds.</b> ${verdict}</p>`;
-    elChoices.innerHTML = '';
-    elResult.style.display = 'block';
-    elResult.innerHTML = `<h4>Résumé</h4><ul>
-      <li><b>Menace finale</b> : ${t} / 10</li>
-      <li><b>Renforts de secours</b> : ${state.flags.reinforcementsBonusGranted?"Débarqués (+500 pts)":"Non arrivés"}</li>
-      <li><b>Recommandation</b> : appliquez pertes, secteurs détruits et PC restants selon le journal.</li>
-    </ul>
-    <div style="margin-top:10px"><button id="again">Rejouer</button></div>`;
-    document.getElementById('again').addEventListener('click', resetGame);
-  }
-
-  function flare(title, text, good){
-    banner.style.display = 'grid';
-    banner.innerHTML = `<div class=\"card\"><h2>${title}</h2><p>${text}</p><button id=\"closeB\">Fermer</button></div>`;
-    document.getElementById('closeB').onclick = ()=> banner.style.display='none';
-    if (audioOn) beep(good?880:220, .25, .25);
-  }
-
-  function pushLog(text){
-    const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-    const entry = `[${stamp}]
-${text}`;
-    state.log.push(entry);
-    const div = document.createElement('div'); div.className = 'log-entry'; div.textContent = entry; elLog.appendChild(div); elLog.scrollTop = elLog.scrollHeight;
-  }
-
-  function exportLog(){
-    const header = `Bastion Kheprios — Journal de mission (5 rounds)
-`+
-                   `=============================================
-`;
-    const content = header + state.log.join("
-
-") + "
-";
-    const blob = new Blob([content], {type:'text/plain'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = 'journal_bastion_kheprios.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  }
-
-  function resetGame(){
-    state.round = 1; state.phaseIndex = 0; state.threat = 3;
-    state.flags.distressAtRound = null; state.flags.reinforcementsBonusGranted = false;
-    state.log.length = 0;
-    render();
-    pushLog('— Réinitialisation —');
-  }
-
-  // ===== TOAST / VOX =====
-  function vox(msg){ const d=document.createElement('div'); d.className='t'; d.textContent = `VOX: ${msg}`; toast.appendChild(d); setTimeout(()=>d.remove(), 4200); if(audioOn) beep(660,.06,.15) }
-
-  // INIT (deferred after intro start)
-  </script>
+<script src="app.js" defer></script>
 </body>
 </html>
