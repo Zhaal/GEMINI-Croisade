@@ -610,7 +610,7 @@ function afficherPhase() {
   choixMelanges.forEach((c) => {
     const btn = document.createElement("div");
     btn.className = "choice";
-    btn.innerHTML = `<div class="c-title">${c.texte}</div><div class="c-tag">${c.tag}</div>`;
+    btn.innerHTML = `<div class="c-title">${c.texte}</div>`;
     btn.addEventListener("click", () => choisir(c));
     choicesEl.appendChild(btn);
   });
@@ -627,7 +627,7 @@ function choisir(choix) {
   updateHUD();
 
   const line = document.createElement("div");
-  line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte} <span class="meta">(${choix.tag})</span>`;
+  line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte}`;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 
@@ -636,10 +636,12 @@ function choisir(choix) {
   if (choix.effet.menace) eff.push(`Menace ${choix.effet.menace > 0 ? "+" : ""}${choix.effet.menace}`);
   if (choix.effet.tyr)    eff.push(`Arrivées Tyranides ${choix.effet.tyr > 0 ? "+" : ""}${choix.effet.tyr}`);
   const effStr = eff.length ? `Effets appliqués : ${eff.join(" | ")}` : "Aucun effet numérique.";
-  modalText.innerHTML = `<p>${choix.fluff}</p><p><em>${choix.bonus}</em></p><p class="meta">${effStr}</p>`;
-  modalMeta.textContent = `Tag : ${choix.tag} — Totaux → Menace ${menace} | Arrivées ${tyr}`;
-  lastTagEl.textContent = choix.tag;
+  modalText.innerHTML = `<p id="fluff" class="wow">${choix.fluff}</p><p id="bonus" class="wow hidden"><em>${choix.bonus}</em></p><p id="eff" class="meta wow hidden">${effStr}</p>`;
+  modalMeta.textContent = `Totaux → Menace ${menace} | Arrivées ${tyr}`;
+  lastTagEl.textContent = eff.length ? eff.join(" | ") : "—";
   showModal(true);
+  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 1000);
+  setTimeout(() => document.getElementById("eff").classList.remove("hidden"), 2000);
 
   nextBtn.disabled = false;
 }

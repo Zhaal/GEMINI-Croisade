@@ -6,9 +6,9 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #0b0b0f;
-  color: #eee;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: radial-gradient(circle at top, #0b0b0f 0%, #000 80%);
+  color: #e4d4aa;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -17,6 +17,8 @@ body {
 h3, h4 {
   font-weight: 600;
   margin-bottom: .5em;
+  color: #d4af37;
+  text-shadow: 0 0 5px #000;
 }
 
 button, .btn {
@@ -180,34 +182,31 @@ header .controls {
 }
 
 .choice {
-  background: #222;
-  border: 1px solid #555;
-  padding: .5em;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background .2s, transform .2s;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    background: linear-gradient(#222, #111);
+    border: 1px solid #d4af37;
+    padding: .5em;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .2s, transform .2s, box-shadow .2s;
+    display: flex;
+    align-items: center;
+    gap: .5em;
+  }
 
-.choice:hover {
-  background: #333;
-  transform: translateY(-2px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-}
+  .choice::before {
+    content: "\2620";
+    color: #d4af37;
+  }
 
-.choice .c-title {
-  font-weight: 500;
-}
+  .choice:hover {
+    background: linear-gradient(#333, #111);
+    transform: translateY(-2px);
+    box-shadow: 0 0 8px rgba(212,175,55,0.6);
+  }
 
-.choice .c-tag {
-  background: #333;
-  padding: .1em .4em;
-  border-radius: 3px;
-  font-size: .8em;
-  color: #ccc;
-}
+  .choice .c-title {
+    font-weight: 500;
+  }
 
 .footer-controls {
   margin-top: auto;
@@ -290,4 +289,23 @@ header .controls {
   background: url('warhammer-bg.jpg') center/cover no-repeat;
   opacity: 0.05;
   z-index: -1;
+}
+
+.hidden {
+  display: none;
+}
+
+.wow {
+  animation: wowFade .6s ease-out;
+}
+
+@keyframes wowFade {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
