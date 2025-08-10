@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Warhammer 40k — Bataille Narrative : Le Promontoire</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">⚔️ <b>Le Promontoire</b> — Bataille narrative 40k</div>
+  <div class="controls">
+    <label class="toggle"><input id="sfxToggle" type="checkbox" checked/> Effets sonores</label>
+    <button class="btn secondary" id="restartBtn" title="Recommencer">Recommencer</button>
+    <button class="btn" id="nextBtn" title="Phase suivante" disabled>Phase suivante ▷</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <section class="stage">
+    <div class="stage-header">
+      <span class="badge"><span class="dot"></span><span id="badgeTour">Tour 1</span></span>
+      <span class="meta" id="badgePhase">Phase de Commandement</span>
+      <span class="meta">Ordre des choix mélangé à chaque phase.</span>
+    </div>
+
+    <div class="narration">
+      <div class="scan"></div>
+      <div class="narr-text" id="narration"></div>
+    </div>
+    <div class="phase-title" id="phaseTitle"></div>
+    <div class="choices" id="choices"></div>
+
+    <div class="footer-controls">
+      <button class="btn ghost" id="skipBtn" title="Afficher un autre ordre de choix (sans changer la phase)">Remélanger</button>
+    </div>
+  </section>
+
+  <aside class="hud">
+    <div class="panel">
+      <h3>État de la bataille</h3>
+      <div class="stats">
+        <div class="meter">
+          <div class="statline"><span>Menace</span><span><b id="menaceVal">0</b></span></div>
+          <div class="bar"><div id="menaceFill" class="fill" style="width:12%"></div></div>
+        </div>
+        <div class="meter">
+          <div class="statline"><span>Arrivées Tyranides (indicatif)</span><span><b id="tyrVal">0</b></span></div>
+          <div class="bar"><div id="tyrFill" class="fill" style="width:8%"></div></div>
+        </div>
+        <div class="statline"><span>Phase</span><span id="hudPhase">1 / 15</span></div>
+        <div class="statline"><span>Dernière résolution</span><span id="lastTag" class="tag">—</span></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Journal</h3>
+      <div class="log" id="log"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h4 id="modalTitle">Résolution</h4>
+    <div class="fx" id="modalText"></div>
+    <div class="meta" id="modalMeta"></div>
+    <div class="row">
+      <span class="kbd">Entrée</span>
+      <button class="btn" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="deco"></div>
+
+<script src="app.js" defer></script>
+</body>
+</html>

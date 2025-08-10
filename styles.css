@@ -1,0 +1,275 @@
+/* --- Reset et style de base --- */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #0b0b0f;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+h3, h4 {
+  font-weight: 600;
+  margin-bottom: .5em;
+}
+
+button, .btn {
+  background: #222;
+  border: 1px solid #555;
+  color: #eee;
+  padding: .5em 1em;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background .2s;
+}
+
+button:hover, .btn:hover {
+  background: #444;
+}
+
+button:disabled, .btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: #444;
+}
+
+.btn.ghost {
+  background: transparent;
+  border-color: #777;
+}
+
+.kbd {
+  background: #333;
+  border-radius: 3px;
+  padding: .1em .4em;
+  font-size: .8em;
+  color: #bbb;
+  margin-right: .5em;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  background: #222;
+  border-radius: 999px;
+  padding: .2em .6em;
+  font-weight: bold;
+}
+
+.badge .dot {
+  width: .6em;
+  height: .6em;
+  background: #6cf;
+  border-radius: 50%;
+  margin-right: .4em;
+}
+
+.meta {
+  font-size: .85em;
+  color: #999;
+}
+
+.tag {
+  display: inline-block;
+  padding: .1em .5em;
+  border-radius: 3px;
+  background: #333;
+  font-size: .8em;
+}
+
+/* --- Layout --- */
+header {
+  background: #111;
+  display: flex;
+  justify-content: space-between;
+  padding: .5em 1em;
+  align-items: center;
+  border-bottom: 1px solid #333;
+}
+
+header .brand {
+  font-size: 1.2em;
+}
+
+header .controls {
+  display: flex;
+  align-items: center;
+  gap: .5em;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: .3em;
+}
+
+.wrap {
+  display: flex;
+  flex: 1;
+  padding: 1em;
+  gap: 1em;
+}
+
+.stage {
+  flex: 3;
+  background: #1a1a1f;
+  border-radius: 8px;
+  padding: 1em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.stage-header {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.narration {
+  background: #111;
+  border-radius: 6px;
+  padding: 1em;
+  position: relative;
+  overflow: hidden;
+}
+
+.scan {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent 45%, rgba(100, 200, 255, 0.2) 50%, transparent 55%);
+  animation: scan 3s linear infinite;
+}
+
+@keyframes scan {
+  to {
+    top: 100%;
+  }
+}
+
+.narr-text {
+  position: relative;
+  z-index: 1;
+  line-height: 1.4;
+}
+
+.phase-title {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin-top: .5em;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: .5em;
+}
+
+.choice {
+  background: #222;
+  border: 1px solid #555;
+  padding: .5em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.choice:hover {
+  background: #333;
+}
+
+.footer-controls {
+  margin-top: auto;
+}
+
+.hud {
+  flex: 1.2;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.panel {
+  background: #1a1a1f;
+  border-radius: 8px;
+  padding: 1em;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: .6em;
+}
+
+.statline {
+  display: flex;
+  justify-content: space-between;
+}
+
+.bar {
+  background: #333;
+  height: .6em;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar .fill {
+  height: 100%;
+  background: #6cf;
+  transition: width .3s ease;
+}
+
+.log {
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: .85em;
+  line-height: 1.3;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-backdrop.show {
+  display: flex;
+}
+
+.modal {
+  background: #1a1a1f;
+  padding: 1em;
+  border-radius: 8px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.modal .fx {
+  margin: .5em 0 1em;
+}
+
+.deco {
+  position: fixed;
+  inset: 0;
+  background: url('warhammer-bg.jpg') center/cover no-repeat;
+  opacity: 0.05;
+  z-index: -1;
+}
