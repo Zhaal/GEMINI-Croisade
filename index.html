@@ -1,1018 +1,567 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Invasion Tyranide — Événement narratif 40K</title>
+  <title>Bastion Kheprios – Assaut Tyranide (5 rounds) ⚠️</title>
   <style>
+    /* ===== THEME ===== */
     :root{
-      --bg:#0b0b0f; --panel:#14141a; --muted:#8b8b96; --text:#e6e6ea; --accent:#d9a441; --accent-2:#c92a2a;
-      --good:#2aa36b; --bad:#e03131; --card:#101016; --glow:#d9a44155;
+      --bg:#07070b; --panel:#101019; --ink:#eef0f8; --muted:#a6a7b3;
+      --accent:#c9ad6a; --warn:#f6c453; --danger:#ff3b3b; --good:#2bde73;
+      --tile:#141425; --line:#2a2a44; --chip:#0b0b16; --shadow:0 12px 40px rgba(0,0,0,.45);
+      --neon:#5af2ff; --neon2:#a0ff6a;
     }
-    *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;background:radial-gradient(1200px 800px at 70% -10%,#1a1510 0%,#0b0b0f 45%,#09090c 100%);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-    h1,h2,h3{margin:0 0 .5rem 0;font-weight:700;letter-spacing:.5px}
-    h1{font-size:clamp(22px,4vw,36px)}
-    h2{font-size:clamp(18px,3vw,24px)}
-    small, .muted{color:var(--muted)}
+    body{margin:0;background:#05050a;color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;overflow:hidden}
 
-    /* Layout */
-    .wrap{max-width:1100px;margin-inline:auto;padding:18px}
-    header{display:grid;grid-template-columns:auto 1fr auto;gap:16px;align-items:center;border-bottom:1px solid #27272f;padding-bottom:12px;margin-bottom:14px}
-    .crest{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(from 210deg at 50% 50%,#302512, #1e1a12 70%, #141216);box-shadow:0 0 0 2px #3a2e1a, 0 0 20px var(--glow)}
-    .crest svg{width:40px;height:40px;fill:var(--accent)}
-    .title{display:flex;flex-direction:column}
-    .pill{display:inline-flex;gap:8px;align-items:center;padding:4px 10px;border:1px solid #2d2d36;border-radius:999px;background:#0e0e14}
+    /* Animated starfield backdrop */
+    #fx-stars{position:fixed;inset:0;z-index:-2;background:radial-gradient(1200px 700px at 70% -20%, #191929 0%, #07070b 70%)}
+    canvas#fx-particles{position:fixed;inset:0;z-index:-1;pointer-events:none}
 
-    /* Stats bar */
-    .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
-    .stat{background:linear-gradient(180deg,#13131a, #0c0c12);border:1px solid #26262f;border-radius:14px;padding:10px 12px}
-    .stat h3{font-size:12px;text-transform:uppercase;letter-spacing:.15em;color:#b7b7bf;margin-bottom:6px}
-    .stat .val{font-size:22px;font-weight:700}
-    .menace{position:relative;height:10px;border-radius:999px;background:#1a1a22;overflow:hidden;margin-top:8px}
-    .menace>span{position:absolute;inset:0;transform-origin:left center;background:linear-gradient(90deg,#5f2 0%,#fd5 40%,#f71 70%,#f22 100%);}
+    .app{display:grid;grid-template-columns:360px 1fr 380px;gap:16px;min-height:100vh;padding:20px;box-sizing:border-box}
+    header{grid-column:1/-1;display:flex;align-items:center;gap:16px;padding:14px 18px;background:linear-gradient(180deg,#16162a,#12121c);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;position:relative;overflow:hidden}
+    header .scan{position:absolute;inset:-60% -40%;background:conic-gradient(from 0deg at 50% 50%, transparent 0 70%, rgba(90,242,255,.06) 72% 74%, transparent 76% 100%);animation:radar 6s linear infinite;mix-blend-mode:screen;pointer-events:none}
+    @keyframes radar{to{transform:rotate(360deg)}}
 
-    /* Panels */
-    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-top:12px}
-    .panel{background:linear-gradient(180deg,#14141a,#0f0f14);border:1px solid #262632;border-radius:16px;padding:14px}
-    .panel .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    header .badge{display:inline-flex;align-items:center;gap:8px;background:var(--chip);border:1px solid var(--line);padding:8px 12px;border-radius:999px;font-size:12px;color:var(--muted)}
+    header h1{margin:0;font-size:22px;letter-spacing:.3px}
+    header .spacer{flex:1}
+    header .controls{display:flex;gap:8px}
 
-    /* Choices */
-    .choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-    .choice{background:linear-gradient(180deg,#121219,#0c0c12);border:1px solid #262636;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
-    .choice h4{margin:0;font-size:16px}
-    .choice p{margin:0;color:#bfc0c7}
-    .choice button{margin-top:auto}
+    button{appearance:none;border:1px solid var(--line);background:linear-gradient(180deg,#1b1b2a,#13131e);color:var(--ink);padding:10px 12px;border-radius:12px;cursor:pointer;transition:transform .05s ease, border-color .2s ease, box-shadow .2s ease;box-shadow:0 1px 0 rgba(255,255,255,.05) inset}
+    button:hover{border-color:#3a3a56;box-shadow:0 0 24px rgba(160,255,106,.12)}
+    button:active{transform:translateY(1px)}
+    .btn-danger{border-color:#4a1a22;background:linear-gradient(180deg,#251219,#190c12);color:#ef9aa7}
+    .btn-ghost{background:#0b0b14}
 
-    /* Buttons */
-    button{appearance:none;border:none;background:linear-gradient(180deg,#1b1b24,#13131a);border:1px solid #2f2f3b;color:var(--text);padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:700}
-    button:hover{box-shadow:0 0 0 2px #2f2f3b inset, 0 0 0 2px #2f2f3b}
-    .btn-primary{background:linear-gradient(180deg,#2a2316,#1a1510);border-color:#3a2c18;box-shadow:0 0 0 1px #3a2c18 inset}
-    .btn-danger{background:linear-gradient(180deg,#2a1616,#1a1010);border-color:#402020}
-    .btn-ghost{background:transparent;border-color:#2f2f3b}
+    .panel{background:linear-gradient(180deg,#141428,#0f0f1a);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);backdrop-filter:saturate(1.1) blur(2px)}
+    .panel h2{margin:0 0 10px 0;font-size:14px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+    .left,.center,.right{padding:16px;overflow:auto}
 
-    /* Log */
-    .log{height:320px;overflow:auto;border-radius:12px;background:#0a0a0f;border:1px solid #22222b;padding:10px}
-    .log .entry{padding:10px;border-left:3px solid #34343f;margin-bottom:10px;background:#0e0e14;border-radius:8px}
-    .log .good{border-left-color:var(--good)}
-    .log .bad{border-left-color:var(--bad)}
+    .stat{display:grid;grid-template-columns:140px 1fr;gap:8px;margin:10px 0}
 
-    /* Wave box */
-    .wave{display:flex;gap:10px;flex-wrap:wrap}
-    .tag{padding:6px 10px;border:1px solid #2f2f3b;border-radius:999px;font-weight:600;background:#0d0d14}
+    /* Neon segmented meter */
+    .threat-wrap{display:grid;gap:8px}
+    .segments{display:grid;grid-template-columns:repeat(10,1fr);gap:6px}
+    .seg{height:12px;border:1px solid #2f2f55;border-radius:6px;box-shadow:inset 0 0 10px rgba(0,0,0,.6)}
+    .seg.on{background:linear-gradient(180deg, rgba(90,242,255,.9), rgba(90,242,255,.25));box-shadow:0 0 14px rgba(90,242,255,.7), inset 0 0 10px rgba(0,0,0,.4)}
+    .seg.warn{background:linear-gradient(180deg, rgba(246,196,83,.9), rgba(246,196,83,.25));box-shadow:0 0 14px rgba(246,196,83,.6)}
+    .seg.danger{background:linear-gradient(180deg, rgba(255,59,59,.95), rgba(255,59,59,.3));box-shadow:0 0 16px rgba(255,59,59,.7)}
 
-    /* Admin */
-    .admin{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-    .field{display:flex;flex-direction:column;gap:6px}
-    input[type="text"], input[type="number"], textarea{width:100%;background:#0b0b12;color:var(--text);border:1px solid #2a2a35;border-radius:10px;padding:10px}
+    .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;color:var(--muted);font-size:12px}
 
-    /* Modal */
-    dialog{border:none;border-radius:16px;max-width:720px;width:min(92vw,720px);background:#0e0e14;color:var(--text);padding:0;overflow:hidden}
-    dialog::backdrop{background:#0008}
-    .modal-head{display:flex;justify-content:space-between;align-items:center;background:#15151c;border-bottom:1px solid #262632;padding:12px 14px}
-    .modal-body{padding:14px}
-    .effects{display:flex;flex-wrap:wrap;gap:8px}
-    .chip{padding:6px 8px;border-radius:8px;background:#0e1510;border:1px solid #244;}
+    .narrative{background:var(--tile);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px;min-height:120px;position:relative}
+    .typewriter{--caret: currentColor}
+    .typewriter::after{content:"_";animation:blink 1s steps(1) infinite;color:var(--neon)}
+    @keyframes blink{50%{opacity:0}}
 
-    /* Responsive */
-    @media (max-width: 900px){
-      .grid{grid-template-columns:1fr}
-      .stats{grid-template-columns:repeat(2,1fr)}
-      .choices{grid-template-columns:1fr}
-      .admin{grid-template-columns:1fr}
+    .phase-title{display:flex;align-items:center;justify-content:space-between;margin:10px 0 6px}
+    .phase-name{font-weight:800;letter-spacing:.06em}
+    .phase-sub{color:var(--muted);font-size:13px}
+
+    /* Cinematic choices */
+    .choices{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
+    .choice{border:1px solid var(--line);background:linear-gradient(180deg,#1a1a2c,#12121c);padding:14px;border-radius:12px;cursor:pointer;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden}
+    .choice .glow{position:absolute;inset:-200% -100%;background:radial-gradient(circle at var(--x,20%) var(--y,30%), rgba(160,255,106,.06), transparent 40%);pointer-events:none}
+    .choice .dot{width:10px;height:10px;border-radius:50%;background:#3a3a56;margin-top:6px}
+    .choice:hover{border-color:#4a4a76}
+    .choice h3{margin:0;font-size:15px}
+    .choice p{margin:4px 0 0 0;color:var(--muted);font-size:13px}
+
+    .result{margin-top:12px;border:1px dashed #3a3a56;border-radius:12px;padding:14px;background:#13131b}
+    .result h4{margin:0 0 6px 0;font-size:14px}
+    .result ul{margin:8px 0 0 18px}
+
+    .log{height:calc(100vh - 160px);overflow:auto;background:var(--tile);border:1px solid var(--line);border-radius:12px;padding:12px;white-space:pre-wrap}
+    .log-entry{border-bottom:1px dashed #2b2b3f;padding:10px 0}
+    .muted{color:var(--muted)}
+
+    .footer{grid-column:1/-1;color:var(--muted);font-size:12px;text-align:center;padding:12px}
+
+    /* Toast / VOX */
+    .toast{position:fixed;right:20px;bottom:20px;z-index:50;display:flex;flex-direction:column;gap:10px}
+    .toast .t{background:#0b0b16;border:1px solid var(--line);padding:10px 12px;border-radius:10px;box-shadow:var(--shadow);max-width:360px}
+
+    /* Siren strip */
+    .siren{grid-column:1/-1;display:grid;grid-template-columns:repeat(16,1fr);gap:6px;margin-top:-8px;margin-bottom:8px}
+    .siren div{height:6px;background:#28111a;border-radius:4px}
+    .siren div.on{background:linear-gradient(90deg,#ff3b3b,#ffa8a8);box-shadow:0 0 18px rgba(255,59,59,.7)}
+
+    /* Screen shake */
+    .shake{animation:shake .45s cubic-bezier(.36,.07,.19,.97) both}
+    @keyframes shake{10%,90%{transform:translate3d(-1px,0,0)}20%,80%{transform:translate3d(2px,0,0)}30%,50%,70%{transform:translate3d(-4px,0,0)}40%,60%{transform:translate3d(4px,0,0)}}
+
+    /* Intro overlay */
+    .intro{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:radial-gradient(1200px 700px at 50% -20%, rgba(90,242,255,.08), rgba(0,0,0,.88) 60%);backdrop-filter:blur(2px)}
+    .intro .card{background:linear-gradient(180deg,#17172a,#0d0d16);border:1px solid var(--line);border-radius:16px;padding:26px 24px;text-align:center;max-width:720px;box-shadow:var(--shadow)}
+    .intro h1{margin:0 0 8px;font-size:28px;letter-spacing:.12em}
+    .intro p{margin:0 0 14px;color:var(--muted)}
+
+    /* Victory/Defeat banner */
+    .banner{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:rgba(0,0,0,.6);backdrop-filter:blur(2px)}
+    .banner .card{background:linear-gradient(180deg,#1a1a2e,#0c0c14);border:1px solid var(--line);border-radius:16px;padding:22px;max-width:720px;text-align:center}
+    .banner h2{margin:0 0 10px}
+
+    @media (max-width:1180px){
+      .app{grid-template-columns:1fr;}
+      .right{order:3}
+      .left{order:2}
+      .center{order:1}
+      .log{height:40vh}
+      body{overflow:auto}
     }
   </style>
 </head>
 <body>
-  <!--
-  =============================================================
-  Invasion Tyranide — Outil narratif pour événement 40K (HTML autonome)
-  -------------------------------------------------------------
-  • Un seul fichier, aucune dépendance externe.
-  • Interface en français. Thème gothique/impérial.
-  • Boucle : à chaque Tour, un Événement apparaît avec 4 choix. Les effets (bonus/malus/modifs de menace) sont CACHÉS jusque
-    après le clic. La Menace détermine la taille/composition de la vague tyranide suivante.
-  • Panneau Admin pour ajuster : nom de planète, seed, Menace, ajout d'événements, export/import, etc.
-  • Sauvegarde automatique dans localStorage (clé: w40k_event_state).
+  <div id="fx-stars"></div>
+  <canvas id="fx-particles"></canvas>
 
-  Personnalisation rapide :
-    – Changez les tables d'unités et la bibliothèque d'événements dans les constantes UNITS et EVENTS ci‑dessous.
-    – Les modificateurs possibles : threat (+/-), bonus/malus (tags), spawnMod (multiplier, addApex, addSynapse, etc.).
-  =============================================================
-  -->
+  <div class="app" id="root">
+    <div class="siren" id="siren"></div>
 
-  <div class="wrap">
-    <header>
-      <div class="crest" aria-hidden="true">
-        <!-- simple aquila/skull hybrid glyph -->
-        <svg viewBox="0 0 64 64"><path d="M30 6h4l2 8h8l6 6-6 2v6h-8v6l-4 10-4-10v-6h-8v-6l-6-2 6-6h8l2-8zM18 46l8 4-6 8h-6l-4-4 8-8zm28 0-8 4 6 8h6l4-4-8-8z"/></svg>
-      </div>
-      <div class="title">
-        <h1>Invasion Tyranide — Défense d'une Plateforme</h1>
-        <span class="pill"><strong>Planète:</strong>&nbsp;<span id="planetName">Helios‑IX</span>&nbsp;•&nbsp;<strong>Seed:</strong>&nbsp;<span id="seedShow">—</span></span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn-ghost" id="btnReset">Nouvelle partie</button>
-        <button class="btn-primary" id="btnNext">Prochain événement</button>
+    <header id="hdr">
+      <div class="scan"></div>
+      <div class="badge">⚙️ Monde-forge <span class="muted">Aegis Prime</span></div>
+      <h1>Bastion Kheprios — Assaut Tyranide</h1>
+      <div class="spacer"></div>
+      <div class="controls">
+        <button id="btnSound" class="btn-ghost" title="Activer l’audio">🔊 Son : OFF</button>
+        <button id="btnExport" title="Exporter le journal">📄 Exporter</button>
+        <button id="btnReset" class="btn-danger" title="Réinitialiser la partie">♻️ Réinitialiser</button>
       </div>
     </header>
 
-    <section class="stats" aria-label="Statistiques de mission">
-      <div class="stat"><h3>Tour</h3><div class="val" id="turn">1</div></div>
-      <div class="stat"><h3>Menace</h3><div class="val"><span id="threatVal">20</span> / 100</div><div class="menace" aria-hidden="true"><span id="menaceBar" style="transform:scaleX(.2)"></span></div></div>
-      <div class="stat"><h3>Vague Tyranide</h3><div class="val" id="waveSize">—</div><small class="muted" id="waveHint"></small></div>
-      <div class="stat"><h3>Modificateurs</h3><div><span class="tag" id="modsEmpty">aucun</span><span id="mods"></span></div></div>
-      <div class="stat"><h3>Défenseurs</h3><div class="val" id="defenders">6 joueurs</div><small class="muted">1 Attaquant : Essaim Tyranide</small></div>
-    </section>
-
-    <div class="grid">
-      <!-- Événement & Choix -->
-      <section class="panel">
-        <div class="head">
-          <h2 id="eventTitle">—</h2>
-          <button class="btn-ghost" id="btnReroll">Relancer l'événement</button>
-        </div>
-        <p id="eventText" class="muted">Cliquez sur « Prochain événement » pour commencer.</p>
-        <div class="choices" id="choices"></div>
-      </section>
-
-      <!-- Vague générée & Journal -->
-      <section class="panel">
-        <div class="head"><h2>Vague générée</h2><button class="btn-ghost" id="btnGenWave">Générer la vague</button></div>
-        <div class="wave" id="wave"></div>
-        <hr style="border:none;border-top:1px solid #292934;margin:12px 0">
-        <div class="head"><h2>Journal</h2><div style="display:flex;gap:8px"><button class="btn-ghost" id="btnExport">Exporter</button><button class="btn-ghost" id="btnImport">Importer</button></div></div>
-        <div class="log" id="log" aria-live="polite"></div>
-      </section>
-    </div>
-
-    <!-- Panneau Admin -->
-    <section class="panel" style="margin-top:14px">
-      <div class="head"><h2>Admin & Personnalisation</h2><button class="btn-ghost" id="btnCollapseAdmin">Masquer</button></div>
-      <div class="admin" id="admin">
-        <div class="field">
-          <label>Nom de la planète</label>
-          <input type="text" id="inpPlanet" value="Helios‑IX" />
-        </div>
-        <div class="field">
-          <label>Menace (0–100)</label>
-          <input type="number" id="inpThreat" min="0" max="100" value="20" />
-        </div>
-        <div class="field">
-          <label>Seed aléatoire (laisser vide pour nouvelle)</label>
-          <input type="text" id="inpSeed" placeholder="ex: m41‑999.Helios" />
-        </div>
-        <div class="field">
-          <label>Événement personnalisé (JSON, 4 choix)</label>
-          <textarea id="inpCustomEvent" rows="5" placeholder='{"title":"…","text":"…","choices":[{"label":"…","text":"…","effects":{"threat":+5}} …]}'></textarea>
-          <div style="display:flex;gap:8px">
-            <button id="btnAddEvent">Ajouter à la bibliothèque</button>
-            <button class="btn-danger" id="btnClearEvents">Vider les perso</button>
+    <!-- LEFT: Status -->
+    <section class="panel left" id="left">
+      <h2>Situation</h2>
+      <div class="stat"><div>Round</div><div><span id="round" class="chip">1 / 5</span></div></div>
+      <div class="stat"><div>Phase</div><div><span id="phase" class="chip">Commandement</span></div></div>
+      <div class="stat">
+        <div>Menace</div>
+        <div class="threat-wrap">
+          <div class="segments" id="segments"></div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:2px">
+            <span>0</span><span>5</span><span>10</span>
           </div>
         </div>
       </div>
+      <div class="stat"><div>Renforts prochains</div><div><span id="reinforce" class="chip">—</span></div></div>
+      <div class="stat"><div>Indicateurs</div><div id="flags" class="muted">Aucun</div></div>
+
+      <div style="margin-top:12px">
+        <h2>Rappels en jeu</h2>
+        <ul class="muted" style="margin-top:6px">
+          <li>Appliquez les <b>effets</b> indiqués sous « À appliquer sur la table » dès qu’un choix est validé.</li>
+          <li>Les bonus/malus ne sont révélés <b>qu’après</b> le clic.</li>
+          <li>La <b>menace</b> ajuste le nombre de renforts tyranides au <em>tour suivant</em>.</li>
+        </ul>
+      </div>
     </section>
+
+    <!-- CENTER: Narrative & Choices -->
+    <main class="panel center">
+      <h2>Narration</h2>
+      <div id="story" class="narrative typewriter"></div>
+      <div class="phase-title">
+        <div class="phase-name" id="phaseName">Phase de Commandement</div>
+        <div class="phase-sub" id="phaseSub">Choisissez 1 option</div>
+      </div>
+      <div id="choices" class="choices"></div>
+      <div id="result" class="result" style="display:none"></div>
+    </main>
+
+    <!-- RIGHT: Log -->
+    <aside class="panel right">
+      <h2>Journal de mission</h2>
+      <div id="log" class="log" aria-live="polite"></div>
+    </aside>
+
+    <div class="footer">© Campagne narrative — arbitre/narrateur. Thème non officiel. Effets spéciaux intégrés ✦</div>
   </div>
 
-  <!-- Modal: Résolution du choix -->
-  <dialog id="dlg">
-    <div class="modal-head">
-      <strong>Conséquences révélées</strong>
-      <button class="btn-ghost" onclick="dlg.close()">Fermer</button>
+  <!-- Intro cinematic overlay -->
+  <div class="intro" id="intro">
+    <div class="card">
+      <h1>IN NOMINE IMPERATORIS</h1>
+      <p>Le Bastion Kheprios appelle tous les commandants. Une nuée tyranide approche. Tenez cinq rounds ou soyez dévorés.</p>
+      <button id="start">Lancer la mission</button>
     </div>
-    <div class="modal-body">
-      <h3 id="dlgTitle">—</h3>
-      <p id="dlgText" class="muted">—</p>
-      <div class="effects" id="dlgEffects"></div>
-    </div>
-  </dialog>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Victory/Defeat banner (hidden) -->
+  <div class="banner" id="banner" style="display:none"></div>
 
   <script>
-    // ======= Données =======
-    const UNITS = {
-      low: ["Termagants", "Hormagaunts", "Gargouilles"],
-      mid: ["Guerriers Tyranides", "Rôdeurs", "Essaims de Voraces"],
-      high:["Carnifex", "Zoanthrope", "Exocrine", "Toxicrène"],
-      apex:["Trygon", "Mawloc", "Hiérodule (petit)"]
-    };
+  // ===== AUDIO (no external files: generated beeps & small loops) =====
+  let audioOn = false;
+  let ctx, master, sirenOsc, padOsc;
 
-    // Bibliothèque d'événements (peut être enrichie via Admin)
-    const EVENTS_BASE = [
-      {
-        title:"Réacteur en surcharge",
-        text:"Le cœur thermique de la plateforme gronde. Une purge d'urgence est possible, au prix d'une panne locale.",
-        choices:[
-          {label:"Purger tout de suite", text:"Dégage de la vapeur brûlante dans les coursives.", effects:{threat:-6, bonus:["Vapeur étouffante"], malus:["Réseau noirci"]}},
-          {label:"Reporter et surveiller", text:"On gagne du temps, mais la pression monte.", effects:{threat:+3}},
-          {label:"Réacheminer vers les macro-canons", text:"Les tubes chauffent à blanc.", effects:{threat:-2, bonus:["Tir de barrage"]}},
-          {label:"Ignorer l'alarme", text:"Prières et rubans bénis. Qu'est-ce qui pourrait mal tourner ?", effects:{threat:+8, malus:["Panne sporadique"]}}
-        ]
-      },
-      {
-        title:"Signal xéno",
-        text:"Un chœur psychique hurle à l'horizon. Les ombres s'agitent.",
-        choices:[
-          {label:"Eriger des contre‑champs", text:"Technaugures au travail.", effects:{threat:-4, bonus:["Ecran de brouillage"], spawnMod:{addSynapse:false}}},
-          {label:"Consolider les lignes", text:"On attend le choc.", effects:{threat:+0}},
-          {label:"Raid téméraire", text:"Sortie blindée dans le no man's land.", effects:{threat:-3, bonus:["Butin biomasse"], spawnMod:{multiplier:0.9}}},
-          {label:"Silence radio", text:"On coupe tout. Le chœur enfle…", effects:{threat:+6, spawnMod:{addApex:true}}}
-        ]
-      },
-      {
-        title:"Pluie sporicide",
-        text:"Le ciel vomit des spores. La visibilité chute.",
-        choices:[
-          {label:"Allumer les balises", text:"Phare de combat.", effects:{threat:-2, bonus:["Balises actives"], spawnMod:{multiplier:0.95}}},
-          {label:"Rester à couvert", text:"On plie sans rompre.", effects:{threat:+1}},
-          {label:"Brûler l'atmosphère", text:"Torches et prométhium.", effects:{threat:-5, malus:["Consommables vides"]}},
-          {label:"Laisser tomber", text:"Que l'Empereur décide.", effects:{threat:+5}}
-        ]
-      },
-      {
-        title:"Munitions sanctifiées",
-        text:"Un prêtre de guerre offre des chargeurs bénis.",
-        choices:[
-          {label:"Armer les sentinelles", text:"Postes clés renforcés.", effects:{threat:-3, bonus:["Munitions bénies"]}},
-          {label:"Doter les vétérans", text:"Élite uniquement.", effects:{threat:-1, bonus:["Tirs précis"]}},
-          {label:"Répartir équitablement", text:"Tous un peu mieux.", effects:{threat:-2}},
-          {label:"Refuser ce zèle", text:"Le rationnement prime.", effects:{threat:+2, malus:["Moral dubitatif"]}}
-        ]
-      },
-      {
-        title:"Coulées de chitine",
-        text:"Des tunnels affleurent sous la plateforme.",
-        choices:[
-          {label:"Dynamiter les accès", text:"Les sapes s'effondrent.", effects:{threat:-4}},
-          {label:"Piéger et observer", text:"Apprendre leurs routes.", effects:{threat:-2, bonus:["Schéma des galeries"]}},
-          {label:"Descente punitive", text:"Escouade téméraire.", effects:{threat:-5, malus:["Blessures"], spawnMod:{multiplier:0.85}}},
-          {label:"Laisser filer", text:"On garde nos forces.", effects:{threat:+3, spawnMod:{addHigh:true}}}
-        ]
-      },
-      {
-        title:"Astre tapeur",
-        text:"Éruption solaire mineure : instruments affolés.",
-        choices:[
-          {label:"Blindage magnétique", text:"Crissements dans les bobines.", effects:{threat:-1}},
-          {label:"Calibrer au jugé", text:"Tireurs au feeling.", effects:{threat:+1, bonus:["Adrénaline"]}},
-          {label:"Prière machine", text:"Litanies sur les cogitateurs.", effects:{threat:-2}},
-          {label:"Ignorer", text:"On continue.", effects:{threat:+3}}
-        ]
-      },
-      {
-        title:"Évacuation civique",
-        text:"Des civils encombrent les quais.",
-        choices:[
-          {label:"Sécuriser un couloir", text:"Une brèche dégagée.", effects:{threat:-3}},
-          {label:"Recruter des auxiliaires", text:"Bras tremblants mais utiles.", effects:{threat:-1, bonus:["Milice"]}},
-          {label:"Priorité front", text:"On repousse et basta.", effects:{threat:+2, malus:["Tensions internes"]}},
-          {label:"Hâtez‑vous !", text:"Procession en panique.", effects:{threat:+4}}
-        ]
-      }
-    ];
-
-    // ======= RNG à seed =======
-    function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return ((t^t>>>14)>>>0)/4294967296}}
-    function hashStr(s){let h=2166136261>>>0;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
-
-    // ======= État =======
-    const STATE = {
-      turn:1,
-      threat:20,
-      planet:"Helios‑IX",
-      defenders:6,
-      bonuses:[],
-      maluses:[],
-      seed:"",
-      events:[],
-      log:[]
-    };
-
-    const els = {
-      planetName: document.getElementById('planetName'),
-      seedShow: document.getElementById('seedShow'),
-      turn: document.getElementById('turn'),
-      threatVal: document.getElementById('threatVal'),
-      menaceBar: document.getElementById('menaceBar'),
-      waveSize: document.getElementById('waveSize'),
-      waveHint: document.getElementById('waveHint'),
-      mods: document.getElementById('mods'),
-      modsEmpty: document.getElementById('modsEmpty'),
-      choices: document.getElementById('choices'),
-      eventTitle: document.getElementById('eventTitle'),
-      eventText: document.getElementById('eventText'),
-      wave: document.getElementById('wave'),
-      log: document.getElementById('log'),
-      btnNext: document.getElementById('btnNext'),
-      btnReroll: document.getElementById('btnReroll'),
-      btnGenWave: document.getElementById('btnGenWave'),
-      btnExport: document.getElementById('btnExport'),
-      btnImport: document.getElementById('btnImport'),
-      btnReset: document.getElementById('btnReset'),
-      // admin
-      inpPlanet: document.getElementById('inpPlanet'),
-      inpThreat: document.getElementById('inpThreat'),
-      inpSeed: document.getElementById('inpSeed'),
-      inpCustomEvent: document.getElementById('inpCustomEvent'),
-      btnAddEvent: document.getElementById('btnAddEvent'),
-      btnClearEvents: document.getElementById('btnClearEvents'),
-      btnCollapseAdmin: document.getElementById('btnCollapseAdmin')
-    };
-
-    let RNG = mulberry32(Date.now()|0);
-
-    // ======= Helpers =======
-    function clamp(v,min,max){return Math.max(min,Math.min(max,v))}
-    function pick(arr){return arr[Math.floor(RNG()*arr.length)]}
-    function formatWaveList(list){
-      const map = new Map();
-      list.forEach(n=>map.set(n,(map.get(n)||0)+1));
-      return [...map.entries()].map(([name,count])=>`${name} ×${count}`).join(', ');
-    }
-
-    // ======= Menace → taille de vague & table d'unités =======
-    function waveInfo(threat){
-      const mult = 1 + (STATE.bonuses.includes('Milice')?0.0:0); // place-holder pour effets futurs
-      const base = Math.floor(threat/8) + 1; // 1 à 13 env
-      const swing = Math.floor(RNG()*3); // 0-2
-      let size = Math.max(1, Math.round((base + swing) * mult));
-      let band = 'low';
-      if(threat>=25) band='mid';
-      if(threat>=55) band='high';
-      if(threat>=80) band='apex';
-      return {size, band};
-    }
-
-    function rollWave(){
-      const {size, band} = waveInfo(STATE.threat);
-      const picks = [];
-      for(let i=0;i<size;i++){
-        const bandList = band==='apex' ? [...UNITS.high, ...UNITS.apex] : band==='high' ? [...UNITS.mid, ...UNITS.high] : band==='mid' ? [...UNITS.low, ...UNITS.mid] : [...UNITS.low];
-        picks.push(pick(bandList));
-      }
-      return {size, band, units:picks};
-    }
-
-    // ======= Événements =======
-    function currentLibrary(){
-      const custom = JSON.parse(localStorage.getItem('w40k_events_custom')||'[]');
-      return [...EVENTS_BASE, ...custom];
-    }
-
-    function nextEvent(){
-      const lib = currentLibrary();
-      const ev = JSON.parse(JSON.stringify(pick(lib))); // deep copy simple
-      renderEvent(ev);
-      STATE._currentEvent = ev;
-      save();
-    }
-
-    function renderEvent(ev){
-      els.eventTitle.textContent = ev.title;
-      els.eventText.textContent = ev.text;
-      els.choices.innerHTML = '';
-      const need = 4 - ev.choices.length;
-      if(need>0){ // si l'auteur a oublié de mettre 4 choix, compléter par défaut
-        for(let i=0;i<need;i++) ev.choices.push({label:"Option", text:"Décision improvisée.", effects:{threat:+1}});
-      }
-      ev.choices.slice(0,4).forEach((c,idx)=>{
-        const div = document.createElement('div');
-        div.className='choice';
-        div.innerHTML = `<h4>${c.label}</h4><p>${c.text}</p><button class="btn-primary">Choisir</button>`;
-        div.querySelector('button').addEventListener('click', ()=>applyChoice(ev, c));
-        els.choices.appendChild(div);
-      });
-    }
-
-    function applyChoice(ev, choice){
-      const eff = normalizeEffects(choice.effects||{});
-      const before = STATE.threat;
-      STATE.threat = clamp(STATE.threat + (eff.threat||0), 0, 100);
-      if(eff.bonus) eff.bonus.forEach(b=>!STATE.bonuses.includes(b)&&STATE.bonuses.push(b));
-      if(eff.malus) eff.malus.forEach(m=>!STATE.maluses.includes(m)&&STATE.maluses.push(m));  id: string;
-  title: string;
-  body: string; // narrative, may include {DEF} {ATT}
-  hidden?: string; // optional hidden description
-  effect?: StoryBeatEffect;
-}
-
-interface Choice {
-  id: string;
-  title: string;
-  body: string;
-  effect: Effect;
-}
-
-interface WaveComposition {
-  gaunts: number; // Termagants/Hormagaunts
-  gargoyles: number;
-  genestealers: number;
-  warriors: number;
-  monsters: number; // Carnifex/Tfex/Exocrine equivalent
-  synapse: number; // Primes/Tyrants/Neurotyrants, etc.
-}
-
-interface EventState {
-  round: number;
-  turn: number;
-  phase: "Début de round" | "Début de tour" | "Après vague";
-  threat: number; // 0..100
-  activeEffects: EffectInstance[];
-  log: string[];
-  seed: number;
-} {
-  round: number;
-  turn: number;
-  phase: "Début de round" | "Début de tour" | "Après vague";
-  threat: number; // 0..100
-  activeEffects: EffectInstance[];
-  log: string[];
-  seed: number;
-}
-
-interface EffectInstance {
-  effect: Effect;
-  remaining: number; // rounds left
-}
-
-// ------------------ Utils ------------------
-const clamp = (n: number, min = 0, max = 100) => Math.max(min, Math.min(max, n));
-const rand = (seedRef: { current: number }) => {
-  // simple LCG for deterministic session randomness
-  seedRef.current = (seedRef.current * 48271) % 0x7fffffff;
-  return seedRef.current / 0x7fffffff;
-};
-
-const pickN = <T,>(arr: T[], n: number, r: () => number): T[] => {
-  const copy = [...arr];
-  const out: T[] = [];
-  for (let i = 0; i < n && copy.length; i++) {
-    const idx = Math.floor(r() * copy.length);
-    out.push(copy.splice(idx, 1)[0]);
+  function initAudio(){
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = 0.6; master.connect(ctx.destination);
   }
-  return out;
-};
-
-const levelFromThreat = (t: number) => {
-  if (t >= 85) return { label: "EXTINCTION", color: "bg-red-600", hint: "Déferlement incontrôlable" };
-  if (t >= 70) return { label: "CATASTROPHIQUE", color: "bg-red-500", hint: "Front rompu" };
-  if (t >= 55) return { label: "CRITIQUE", color: "bg-orange-500", hint: "Positions débordées" };
-  if (t >= 40) return { label: "ÉLEVÉ", color: "bg-amber-500", hint: "Pression croissante" };
-  if (t >= 25) return { label: "MODÉRÉ", color: "bg-lime-500", hint: "Résistance tenable" };
-  if (t >= 10) return { label: "FAIBLE", color: "bg-emerald-500", hint: "Contrôle du terrain" };
-  return { label: "NÉGLIGEABLE", color: "bg-teal-500", hint: "Silence des ruches" };
-};
-
-// ------------------ Default Choice Library & Story Events ------------------
-const CHOICES_LIBRARY: Choice[] = [
-  { id: "orbital-strike", title: "Frappe orbitale ciblée", body: "Les relais astropathiques hurlent ; une fenêtre s'ouvre au-dessus des nuées.", effect: { id: "orbital-strike", name: "Frappe orbitale", description: "Réduit la menace mais accroît la férocité ultérieure.", durationRounds: 2, threatDelta: -10, waveMultiplier: 1.15, notes: "+15% spawns pendant 2 rounds" } },
-  { id: "overcharge-reactor", title: "Surcharger les réacteurs de la plateforme", body: "De lourds leviers sont tirés ; les cogitateurs gémissent sous la contrainte.", effect: { id: "overcharge", name: "Surcharge", description: "+20% tourelles / -5 menace, puis +5/round", durationRounds: 2, threatDelta: -5, waveMultiplier: 1, notes: "+5 menace/fin de round (auto)" } },
-  { id: "fortify", title: "Sceller les remparts de fer bénit", body: "Les chapelains oignent les boulons ; les plaques claquent sous les marteaux.", effect: { id: "fortify", name: "Fortifications", description: "-6 menace, vagues -10%", durationRounds: 3, threatDelta: -6, waveMultiplier: 0.9 } },
-  { id: "counter-sally", title: "Sortie de contre-attaque", body: "Des portes se lèvent ; une poignée d'élus charge vers la marée.", effect: { id: "sally", name: "Contre-attaque", description: "Moins de gaunts, plus d'élites", durationRounds: 1, threatDelta: -8, spawnBias: { gaunts: -10, warriors: +2, genestealers: +3 } } },
-  { id: "evacuate", title: "Évacuer les serfs et blessés", body: "Les coursives s'emplissent de prières ; les cargos se détachent dans l'obscurité.", effect: { id: "evac", name: "Évacuation", description: "Menace -4", durationRounds: 0, threatDelta: -4 } },
-  { id: "ammo-ration", title: "Rationner le prométhium et les obus", body: "Les intendants cassent des sceaux et referment des coffres.", effect: { id: "ration", name: "Rationnement", description: "+10% spawns, -2 menace", durationRounds: 2, threatDelta: -2, waveMultiplier: 1.1 } },
-  { id: "auspex-scan", title: "Barrage d'auspex et d'encens", body: "Les fumées montent, les antennes frémissent ; des runes s'alignent.", effect: { id: "auspex", name: "Auspex", description: "Vagues plus stables (variance -30%)", durationRounds: 2, threatDelta: -3, notes: "Réduit la variance" } },
-  { id: "lure", title: "Disperser des leurres phéromonaux", body: "Des drones hurlent ; la meute hésite une seconde.", effect: { id: "lure", name: "Leurres", description: "Moins de monstres, plus de gaunts", durationRounds: 1, threatDelta: -2, spawnBias: { monsters: -2, gaunts: +5 } } },
-  { id: "sanctuary", title: "Rites de sanctification et litanies", body: "Les voix graves couvrent un instant le vrombissement des essaims.", effect: { id: "sanct", name: "Bénédiction", description: "Menace -5", durationRounds: 0, threatDelta: -5 } },
-  { id: "data-spike", title: "Injection tactique dans les cogitateurs", body: "Des paquets de données tachyoniques ensorcellent les tourelles.", effect: { id: "dataspike", name: "Optimisation", description: "Réduit la part synapse", durationRounds: 2, threatDelta: -1, spawnBias: { synapse: -1 } } },
-  { id: "promethium-wall", title: "Ériger un mur de prométhium", body: "Un rideau de feu avale la nuit ; les ombres se cabrent.", effect: { id: "promethium", name: "Rideau de feu", description: "-6 menace, +monstres", durationRounds: 1, threatDelta: -6, spawnBias: { monsters: +2, gaunts: -5 } } },
-  { id: "repair", title: "Lâcher les équipes de Techno-adeptes", body: "Les mechadendrites grésillent le long des parapets déchirés.", effect: { id: "repair", name: "Réparations", description: "-3 menace, vagues -5%", durationRounds: 1, threatDelta: -3, waveMultiplier: 0.95 } },
-  // Ajouts narratifs supplémentaires
-  { id: "vox-psalm", title: "Diffuser un psaume de fer par vox", body: "Un chœur de mille voix recouvre le fracas des armes.", effect: { id: "vox-psalm", name: "Psaume", description: "Menace -2", durationRounds: 1, threatDelta: -2 } },
-  { id: "mine-corridor", title: "Piéger les corridors d'accès", body: "Des cierges sont plantés près des mines bénies.", effect: { id: "mine", name: "Couloirs minés", description: "Biais anti-gaunts", durationRounds: 2, threatDelta: -1, spawnBias: { gaunts: -6 } } },
-  { id: "bait-squad", title: "Détacher une escouade-appât", body: "Des silhouettes s'élancent, transmetteurs allumés.", effect: { id: "bait", name: "Appât", description: "Plus de gargouilles, moins de synapse", durationRounds: 1, threatDelta: -1, spawnBias: { gargoyles: +4, synapse: -1 } } },
-  { id: "shield-overlap", title: "Recadrer le chevauchement des boucliers", body: "Des champs miroitent ; l'air vibre d'ozone.", effect: { id: "shield", name: "Boucliers", description: "vagues -8%", durationRounds: 2, threatDelta: -2, waveMultiplier: 0.92 } },
-  { id: "decapitation", title: "Coup de décapitation sur la bête alpha", body: "Le tir de précision part ; l'essaim hurle d'une seule gorge.", effect: { id: "decap", name: "Décapitation", description: "Menace -7, +gaunts", durationRounds: 1, threatDelta: -7, spawnBias: { gaunts: +6, synapse: -1 } } },
-  { id: "night-flares", title: "Allumer la nuit de fusées", body: "Des traînées blanches lacèrent les nuages toxiques.", effect: { id: "flares", name: "Fusées", description: "Variance -20%", durationRounds: 2, threatDelta: -1, notes: "Réduit légèrement la variance" } },
-  { id: "grim-harvest", title: "Moisson lugubre des cadavres", body: "Les serviteurs traînent les corps pour nourrir les forges.", effect: { id: "harvest", name: "Moisson", description: "vagues +5%", durationRounds: 2, threatDelta: -3, waveMultiplier: 1.05 } },
-  { id: "iron-oath", title: "Prêter le Serment de Fer", body: "Chaque défenseur grave son nom sur la plaque d'acier.", effect: { id: "oath", name: "Serment", description: "Menace -3", durationRounds: 0, threatDelta: -3 } },
-];
-
-// Riche bibliothèque d'événements narratifs (déclenchés en début de round/tour ou pendant une vague)
-const STORY_EVENTS: StoryEvent[] = [
-  { id: "chant-litany", title: "Litanie de Blindage", body: "Un chapelain frappe sa croix ferrée ; les voix de {DEF} s'élèvent et la peur reflue.", effect: { threatDelta: -3 } },
-  { id: "acid-rain", title: "Pluie acide", body: "Des pluies corrosives rongent les créneaux ; la pierre pleure et les optiques grésillent.", effect: { waveMultiplier: 1.08 } },
-  { id: "spore-bloom", title: "Floraison de spores", body: "Des sacs explosent en nuages verdâtres ; les silhouettes disparaissent dans un brouillard vivant.", effect: { spawnBias: { gargoyles: +3, gaunts: +2 } } },
-  { id: "synaptic-scream", title: "Cri synaptique", body: "Un hurlement traverse les crânes ; la volonté vacille devant {ATT}.", effect: { threatDelta: +4, spawnBias: { synapse: +1 } } },
-  { id: "power-surge", title: "Surtension", body: "Une onde monte des générateurs ; les boucliers palpitent avant de se stabiliser.", effect: { threatDelta: -1, waveMultiplier: 0.95 } },
-  { id: "machine-spirit", title: "L'Esprit de la Machine s'apaise", body: "De vieilles plaques d'encens et chapelets de données pendillent, et pourtant… les tourelles se synchronisent.", effect: { threatDelta: -2 } },
-  { id: "behemoth-shadow", title: "Ombre de Béhémoth", body: "Une masse astronomique occulte un instant les astres ; tous lèvent la tête.", effect: { spawnBias: { monsters: +2 } } },
-  { id: "munitions-short", title: "Caisses vides", body: "Des serfs secouent des boîtes : il reste surtout des balles bénites et peu d'obus.", effect: { waveMultiplier: 1.06 } },
-  { id: "faith-surge", title: "Marée de Foi", body: "Un reliquaire est brandi au-dessus des parapets ; le moral se regonfle.", effect: { threatDelta: -4 } },
-  { id: "bio-plasm", title: "Déversement de bioplasma", body: "Des jets bouillonnants arrachent des créneaux ; la pierre crépite.", effect: { threatDelta: +3 } },
-  { id: "hunter-packs", title: "Meutes traqueuses", body: "Des ombres félinées rampent entre les ombilicaux ; l'air sent le venin.", effect: { spawnBias: { genestealers: +3 } } },
-  { id: "wing-storm", title: "Tempête d'ailes", body: "Le ciel vrombit ; des myriades de membranes se fracassent contre les projecteurs.", effect: { spawnBias: { gargoyles: +4 } } },
-  { id: "signal-jam", title: "Parasitage de signal", body: "Des chuintements saturent les vox ; les ordres arrivent morcelés.", effect: { waveMultiplier: 1.05, threatDelta: +1 } },
-  { id: "seismic-rumble", title: "Rumeur sismique", body: "Le sol tremble ; des conduits cèdent et piègent autant d'ennemis que d'alliés.", effect: { waveMultiplier: 0.97 } },
-  { id: "carapace-molt", title: "Mue de carapace", body: "Des plaques chitineuses jonchent les fossés ; la marée se renforce d'un cran.", effect: { threatDelta: +2 } },
-  { id: "psykers-ward", title: "Voile des psykers", body: "Un cercle de cendre s'enflamme ; une barrière mentale repousse un instant les murmures.", effect: { threatDelta: -2 } },
-  { id: "void-drone", title: "Drones du vide", body: "Un essaim allié venu d'en haut grésille au-dessus des remparts, éclairant les cibles.", effect: { spawnBias: { monsters: -1 } } },
-  { id: "tyrant-roar", title: "Rugissement du Tyran", body: "Les antennes se dressent, la marée obéit d'un seul mouvement.", effect: { threatDelta: +3, spawnBias: { synapse: +1 } } },
-  { id: "ammo-blessing", title: "Bénédiction des munitions", body: "L'huile sacrée goutte sur les chargeurs ; les coups portent où il faut.", effect: { threatDelta: -1 } },
-  { id: "toxin-fog", title: "Brouillard toxique", body: "La brume colle aux poumons ; on tousse, on prie.", effect: { waveMultiplier: 1.04 } },
-  { id: "counter-howl", title: "Hurlement de défi", body: "Les vétérans frappent de la crosse ; la ligne tient.", effect: { threatDelta: -2 } },
-  { id: "feeder-tendrils", title: "Vrilles nourricières", body: "Des câbles vivants rampent sous les grilles ; des crânes disparaissent.", effect: { threatDelta: +4 } },
-  { id: "servo-repair", title: "Essaims de servocrânes", body: "Les drones-bénitiers colmatent, soudaient, chantent.", effect: { waveMultiplier: 0.96 } },
-];
-
-// ------------------ Wave generation ------------------
-const baseWaveForThreat = (t: number) => {
-  // Base points/poids abstraits par vague
-  // Ces valeurs sont délibérément système-agnostiques (pas de profils 40k).
-  if (t >= 85) return 46;
-  if (t >= 70) return 40;
-  if (t >= 55) return 34;
-  if (t >= 40) return 28;
-  if (t >= 25) return 22;
-  if (t >= 10) return 16;
-  return 10;
-};
-
-const compoFromBudget = (budget: number, r: () => number, bias?: Partial<WaveComposition>): WaveComposition => {
-  // Ratios de tiranides typiques (ajustés par bias)
-  const weights = {
-    gaunts: 5 + (bias?.gaunts ?? 0),
-    gargoyles: 2 + (bias?.gargoyles ?? 0),
-    genestealers: 2 + (bias?.genestealers ?? 0),
-    warriors: 2 + (bias?.warriors ?? 0),
-    monsters: 1 + (bias?.monsters ?? 0),
-    synapse: 1 + (bias?.synapse ?? 0),
-  } as Record<keyof WaveComposition, number>;
-
-  const entries = Object.entries(weights) as [keyof WaveComposition, number][];
-  const totalW = entries.reduce((s, [, w]) => s + Math.max(0, w), 0);
-
-  const unitCosts: Record<keyof WaveComposition, number> = {
-    gaunts: 1,
-    gargoyles: 2,
-    genestealers: 3,
-    warriors: 3,
-    monsters: 6,
-    synapse: 5,
-  };
-
-  const result: WaveComposition = { gaunts: 0, gargoyles: 0, genestealers: 0, warriors: 0, monsters: 0, synapse: 0 };
-
-  let remaining = budget;
-  while (remaining > 0) {
-    let roll = r() * totalW;
-    for (const [k, w] of entries) {
-      roll -= Math.max(0, w);
-      if (roll <= 0) {
-        const cost = unitCosts[k];
-        if (remaining - cost < -0.5) break;
-        // petite limitation: pas plus de 1 synapse par tranche 15 budget
-        if (k === "synapse" && result.synapse >= Math.floor(budget / 15)) break;
-        (result as any)[k]++;
-        remaining -= cost;
-        break;
-      }
-    }
-    // sécurité pour éviter boucle infinie en fin de budget
-    if (remaining < 1) break;
+  function beep(freq=440, dur=0.12, vol=0.2){
+    if (!audioOn || !ctx) return;
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.type = 'square'; o.frequency.value = freq; g.gain.value = vol;
+    o.connect(g); g.connect(master); o.start(); g.gain.setValueAtTime(vol, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur); o.stop(ctx.currentTime + dur);
   }
-  return result;
-};
+  function menaceStinger(up=true){
+    if (!audioOn || !ctx) return;
+    const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='sawtooth';
+    o.frequency.setValueAtTime(up?220:440, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(up?880:110, ctx.currentTime+0.4);
+    g.gain.value=0.15; o.connect(g); g.connect(master); o.start(); o.stop(ctx.currentTime+0.45);
+  }
+  function startPad(){
+    if (!audioOn || padOsc) return;
+    padOsc = ctx.createOscillator(); const g = ctx.createGain();
+    padOsc.type = 'sine'; padOsc.frequency.value = 110; g.gain.value = 0.04;
+    padOsc.connect(g); g.connect(master); padOsc.start();
+  }
+  function stopPad(){ if (padOsc){ padOsc.stop(); padOsc.disconnect(); padOsc=null; } }
 
-const formatWave = (w: WaveComposition) =>
-  [
-    w.gaunts && `${w.gaunts}x Gaunts`,
-    w.gargoyles && `${w.gargoyles}x Gargoyles`,
-    w.genestealers && `${w.genestealers}x Genestealers`,
-    w.warriors && `${w.warriors}x Warriors`,
-    w.monsters && `${w.monsters}x Monstres`,
-    w.synapse && `${w.synapse}x Synapse`,
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // ===== PARTICLES / STARS =====
+  const cvs = document.getElementById('fx-particles');
+  const c = cvs.getContext('2d');
+  let W,H,parts=[];
+  function resize(){ W = cvs.width = window.innerWidth; H = cvs.height = window.innerHeight; }
+  window.addEventListener('resize', resize); resize();
+  function spawn(n=120){
+    parts = Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,v:(.2+Math.random()*1.2),s:Math.random()*1.6+0.2}))
+  }
+  spawn(140);
+  function loop(){
+    c.clearRect(0,0,W,H);
+    c.fillStyle = 'rgba(255,255,255,.7)';
+    parts.forEach(p=>{ c.globalAlpha = 0.3+Math.random()*0.7; c.fillRect(p.x,p.y,p.s,p.s); p.y += p.v; if (p.y>H) {p.y=-5;p.x=Math.random()*W;} });
+    requestAnimationFrame(loop);
+  } loop();
 
-// ------------------ Component ------------------
-export default function OrchestrateurAssautTyranide() {
-  const [state, setState] = useState<EventState>({
-    round: 1,
-    turn: 1,
-    phase: "Début de round",
-    threat: 25,
-    activeEffects: [],
-    log: ["Les sirènes hurlent. La plateforme se dresse dans la nuit sans étoiles. Un grondement lointain annonce la Flotte-Ruche."],
-    seed: Math.floor(Math.random() * 1e9),
-  });
+  // ===== DATA MODEL =====
+  const MAX_ROUNDS = 5;
+  const PHASES = ["Commandement", "Charge", "Ébranlement"]; // ordre fixe
 
-  const [choicesPool, setChoicesPool] = useState<Choice[]>(CHOICES_LIBRARY);
-  const [drawnChoices, setDrawnChoices] = useState<Choice[]>([]);
-  const [variance, setVariance] = useState<number>(0.25); // +/- 25%
-  const [baseMultiplier, setBaseMultiplier] = useState<number>(1);
-  const [defenderName, setDefenderName] = useState<string>("Coalition Défenseurs (x6)");
-  const [attackerName, setAttackerName] = useState<string>("Flotte-Ruche");
-  const [showMechanics, setShowMechanics] = useState<boolean>(false);
-  const seedRef = useRef<number>(state.seed);
+  function reinforcementsFor(threat){
+    if (threat <= 2) return {units:1, note:"escarmouche"};
+    if (threat <= 4) return {units:3, note:"vague mineure"};
+    if (threat <= 6) return {units:5, note:"attaque majeure"};
+    if (threat <= 8) return {units:7, note:"marée vorace"};
+    return {units:10, note:"assaut total + 1 monstre"};
+  }
 
-  // Rehydrate localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("tyranid-orchestrator");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setState(parsed.state);
-        setChoicesPool(parsed.choicesPool ?? CHOICES_LIBRARY);
-        setVariance(parsed.variance ?? 0.25);
-        setBaseMultiplier(parsed.baseMultiplier ?? 1);
-        setDefenderName(parsed.defenderName ?? defenderName);
-        setAttackerName(parsed.attackerName ?? attackerName);
-        setShowMechanics(parsed.showMechanics ?? false);
-        seedRef.current = parsed.state.seed;
-      } catch (e) {
-        console.warn("Impossible de recharger l'état sauvegardé");
+  const ROUND_INTROS = [
+    "Les auspex hurlent. Des signatures biomorphes émergent de la haute atmosphère. Les équipes verrouillent les sas du Bastion Kheprios.",
+    "Des spores-pluie martèlent la coque. Les premières vrilles xenos testent les défenses, cherchant une faille dans les corridors extérieurs.",
+    "La coque grince. Des bio-plasma fondent l’acier. Les commandants doivent choisir où tenir et où céder pour gagner du temps.",
+    "Des nœuds synaptiques dirigent désormais l’assaut. La nuée s’adapte, feinte, et frappe là où la résistance vacille.",
+    "Le cœur du Bastion bat au rouge. Dans les galeries inférieures, tout devient une seule décision : tenir… ou être dévoré."
+  ];
+
+  const CHOICES = {
+    Commandement: [
+      { id:"def_ext", title:"Renforcer les défenses extérieures", threat:+1, effects:[
+          "Jusqu’à la fin du tour, toutes les unités AMIES qui tiennent un objectif gagnent +1 à la sauvegarde.",
+          "Notez la hausse de menace pour les renforts tyranides du prochain tour." ] },
+      { id:"intercept", title:"Envoyer un détachement d’interception", threat:-1, effects:[
+          "Choisissez une unité d’INFANTERIE AMIE : retirez-la du champ de bataille maintenant. À la fin de la phase de Charge ENNEMIE, elle arrive comme RÉSERVE STRATÉGIQUE à >6'' d’un bord et >9'' des ennemis.",
+          "Menace -1 (moins de pression immédiate)." ] },
+      { id:"batteries", title:"Surcharger les batteries d’armes orbitales", threat:0, effects:[
+          "Au début de votre prochaine phase de TIR, choisissez 1 unité ennemie visible : infligez D3 Blessures Mortelles.",
+          "La menace n’évolue pas." ] },
+      { id:"evac", title:"Organiser l’évacuation de civils", threat:-2, effects:[
+          "Retirez une unité d’INFANTERIE AMIE (elle escorte) : elle ne peut pas agir ce tour.",
+          "Si la zone d’extraction est attaquée ce tour, jetez 1D6 : sur 1-2, perdez 1 PC (panique et pertes).",
+          "Menace -2 si l’extraction n’est pas interrompue." ] }
+    ],
+    Charge: [
+      { id:"assault", title:"Contre-attaque fulgurante", threat:+1, effects:[
+          "Jusqu’à la fin du tour, les unités AMIES qui déclarent une charge gagnent +1 Attaque.",
+          "Menace +1 (provocation de la nuée)." ] },
+      { id:"lockdown", title:"Verrouiller le secteur", threat:-1, effects:[
+          "Tous les PORTES/PASSAGES clés deviennent BLOQUÉS ce tour : aucun mouvement à travers.",
+          "Menace -1 (ralentissement de la poussée ennemie)." ] },
+      { id:"synapse", title:"Cibler les créatures synapses", threat:-2, effects:[
+          "Si une unité SYNAPSE ennemie est détruite ce tour, toutes les unités TYRANIDES subissent -1 Commandement jusqu’à votre prochain tour.",
+          "Menace -2 (brèche dans la coordination)." ] },
+      { id:"elites", title:"Déployer les réserves d’élite", threat:0, effects:[
+          "Ajoutez immédiatement UNE unité de renfort prédéfinie (terminators, custodes, crisis, etc.) sur un point ami (>9'' des ennemis).",
+          "La menace n’évolue pas." ] }
+    ],
+    Ébranlement: [
+      { id:"repair", title:"Réparer les systèmes critiques", threat:-1, effects:[
+          "Gagnez +1 PC (ou restaurer 1 équipement/stratagème limité).",
+          "Menace -1." ] },
+      { id:"sos", title:"Appel à la flotte de secours", threat:+1, flag:"distress", effects:[
+          "Aucun effet immédiat. Si vous survivez 3 tours APRÈS cet appel, recevez +500 pts de renforts à l’amorce du round suivant.",
+          "Menace +1 (émissions détectées par la nuée)." ] },
+      { id:"sacrifice", title:"Sacrifier un secteur pour gagner du temps", threat:-2, effects:[
+          "Retirez 1 OBJECTIF du champ de bataille (considérez-le PERDU).",
+          "Menace -2 (la nuée se disperse vers la zone incendiée)." ] },
+      { id:"rally", title:"Rallier les troupes", threat:0, effects:[
+          "Jusqu’à la fin du tour, toutes les unités AMIES à 6'' d’un PERSONNAGE gagnent Relance des 1 pour toucher.",
+          "La menace n’évolue pas." ] }
+    ]
+  };
+
+  // ===== STATE =====
+  const state = { round:1, phaseIndex:0, threat:3, flags:{ distressAtRound:null, reinforcementsBonusGranted:false }, log:[] };
+
+  // ===== UI BINDINGS =====
+  const elRound = document.getElementById('round');
+  const elPhase = document.getElementById('phase');
+  const elSegments = document.getElementById('segments');
+  const elReinf = document.getElementById('reinforce');
+  const elFlags = document.getElementById('flags');
+  const elStory = document.getElementById('story');
+  const elPhaseName = document.getElementById('phaseName');
+  const elPhaseSub = document.getElementById('phaseSub');
+  const elChoices = document.getElementById('choices');
+  const elResult = document.getElementById('result');
+  const elLog = document.getElementById('log');
+  const btnReset = document.getElementById('btnReset');
+  const btnExport = document.getElementById('btnExport');
+  const btnSound = document.getElementById('btnSound');
+  const intro = document.getElementById('intro');
+  const banner = document.getElementById('banner');
+  const toast = document.getElementById('toast');
+  const sirenStrip = document.getElementById('siren');
+
+  btnReset.addEventListener('click', () => { if(confirm('Réinitialiser la mission ?')) resetGame(); });
+  btnExport.addEventListener('click', exportLog);
+  btnSound.addEventListener('click', toggleSound);
+  document.getElementById('start').addEventListener('click', ()=>{ intro.remove(); startWow(); render(); pushLog('Mise en alerte : la nuée approche. Menace initiale 3/10.'); vox('Canaux vox synchronisés. Tous les secteurs en niveau CRIMSON.'); });
+
+  // Build threat segments
+  for(let i=0;i<10;i++){ const d=document.createElement('div'); d.className='seg'; elSegments.appendChild(d); }
+
+  // Siren light strip
+  for(let i=0;i<16;i++){ const s=document.createElement('div'); sirenStrip.appendChild(s); }
+
+  function toggleSound(){
+    if (!ctx) initAudio();
+    audioOn = !audioOn; btnSound.textContent = '🔊 Son : ' + (audioOn?'ON':'OFF');
+    if (audioOn) { startPad(); beep(880, .05, .2); } else { stopPad(); }
+  }
+
+  function startWow(){
+    // Animate siren
+    let idx=0; setInterval(()=>{ Array.from(sirenStrip.children).forEach((d,i)=>{ d.classList.toggle('on', (i%4)===idx%4); }); idx++; },140);
+  }
+
+  // ===== RENDERING =====
+  function render(){
+    elRound.textContent = `${state.round} / ${MAX_ROUNDS}`;
+    elPhase.textContent = PHASES[state.phaseIndex];
+
+    // Threat segments
+    Array.from(elSegments.children).forEach((seg,i)=>{
+      const on = i < state.threat; seg.className='seg'; if(on) seg.classList.add('on'); if(i>=6 && on) seg.classList.add('warn'); if(i>=8 && on) seg.classList.add('danger');
+    });
+
+    const reinf = reinforcementsFor(state.threat);
+    elReinf.textContent = `${reinf.units} unités (${reinf.note})`;
+
+    const flagBits = [];
+    if (state.flags.distressAtRound) flagBits.push(`Appel SOS au round ${state.flags.distressAtRound}`);
+    if (state.flags.reinforcementsBonusGranted) flagBits.push(`Renforts +500 pts déverrouillés`);
+    elFlags.textContent = flagBits.length ? flagBits.join(' · ') : 'Aucun';
+
+    // Story intro per round + conditional
+    typewrite(`<p>${ROUND_INTROS[state.round-1] || ROUND_INTROS[ROUND_INTROS.length-1]}</p>` + storyConditional());
+
+    elPhaseName.textContent = `Phase de ${PHASES[state.phaseIndex]}`;
+    elPhaseSub.textContent = `Round ${state.round} — choisissez 1 option`;
+
+    elChoices.innerHTML = '';
+    elResult.style.display = 'none';
+    const list = CHOICES[PHASES[state.phaseIndex]];
+    list.forEach(choice => {
+      const btn = document.createElement('button');
+      btn.className = 'choice';
+      btn.innerHTML = `<div class="glow"></div><div class="dot"></div><div><h3>${choice.title}</h3><p class="muted">Décision irréversible pour ce tour.</p></div>`;
+      btn.addEventListener('pointermove', e=>{ btn.style.setProperty('--x', e.offsetX+'px'); btn.style.setProperty('--y', e.offsetY+'px'); });
+      btn.addEventListener('click', () => selectChoice(choice));
+      elChoices.appendChild(btn);
+    });
+  }
+
+  function storyConditional(){
+    const t = state.threat; let bits = [];
+    if (t <= 2) bits.push("<p>Les bioformes sondent prudemment la coque. Les cogitateurs de défense gagnent un temps précieux.</p>");
+    else if (t <= 4) bits.push("<p>Les premières vagues s’écrasent comme une marée d’acier et de chitine. Les corridors tiennent encore.</p>");
+    else if (t <= 6) bits.push("<p>La pression monte. Des couinements synaptiques résonnent sur les vox. L’ombre de la nuée s’épaissit.</p>");
+    else if (t <= 8) bits.push("<p>La plateforme tremble. Les essaims affluent par grappes et saturent les lignes de tir.</p>");
+    else bits.push("<p><b>ASSAUT TOTAL</b>. Les créatures monstrueuses mènent la charge, ignorant les pertes. Seul le feu purifie.</p>");
+
+    if (state.flags.distressAtRound && !state.flags.reinforcementsBonusGranted){
+      const due = state.flags.distressAtRound + 3;
+      if (state.round >= due){
+        state.flags.reinforcementsBonusGranted = true;
+        pushLog(`✅ Renforts de secours arrivés (+500 pts) suite à l’appel du round ${state.flags.distressAtRound}.`);
+        vox('Transpondeurs alliés confirmés. Renforts en approche orbitale.');
+      }else{
+        bits.push(`<p class=\"muted\">Signal de détresse en attente… T-${due - state.round} round(s) avant arrivée potentielle.</p>`);
       }
     }
-  }, []);
+    return bits.join('
+');
+  }
 
-  useEffect(() => {
-    localStorage.setItem(
-      "tyranid-orchestrator",
-      JSON.stringify({ state, choicesPool, variance, baseMultiplier, defenderName, attackerName, showMechanics })
+  // Typewriter effect
+  let twTimer; function typewrite(html){ clearTimeout(twTimer); elStory.innerHTML=''; const tmp=document.createElement('div'); tmp.innerHTML=html; const text=tmp.textContent; let i=0; (function step(){ elStory.textContent = text.slice(0, i++); if(i<=text.length){ twTimer=setTimeout(step, 10); } })(); }
+
+  function selectChoice(choice){
+    const prevThreat = state.threat;
+    state.threat = Math.max(0, Math.min(10, state.threat + (choice.threat||0)));
+
+    if (choice.flag === 'distress' && !state.flags.distressAtRound){ state.flags.distressAtRound = state.round; vox('⚠️ Canal d’urgence ouvert. Triangulation des relais orbitaux.'); }
+
+    const reinf = reinforcementsFor(state.threat);
+
+    const delta = (choice.threat>0?`+${choice.threat}`:choice.threat);
+    const list = [
+      `<b>Menace</b> : ${prevThreat} → ${state.threat} (${delta||0})`,
+      `<b>Renforts tyranides au prochain tour</b> : ${reinf.units} unités (${reinf.note}).`,
+      '<b>À appliquer sur la table :</b>'
+    ].concat(choice.effects.map(e=>`• ${e}`));
+
+    elResult.style.display = 'block';
+    elResult.innerHTML = `<h4>Décision : ${choice.title}</h4><ul>${list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+
+    pushLog(
+      `Round ${state.round} — Phase ${PHASES[state.phaseIndex]} — ${choice.title}
+`+
+      `Menace: ${prevThreat} → ${state.threat} (${delta||0})
+`+
+      `Renforts prochains: ${reinf.units} (${reinf.note})
+`+
+      `Effets: 
+ - ${choice.effects.join("
+ - ")}`
     );
-  }, [state, choicesPool, variance, baseMultiplier, defenderName, attackerName, showMechanics]);
 
-  const threatLevel = useMemo(() => levelFromThreat(state.threat), [state.threat]);
+    // WOW: audio + shake on large change
+    if (audioOn) menaceStinger(state.threat > prevThreat);
+    if (Math.abs(state.threat - prevThreat) >= 2) document.getElementById('root').classList.add('shake'), setTimeout(()=>document.getElementById('root').classList.remove('shake'), 500);
 
-  const activeNotes = useMemo(() => state.activeEffects.map((e) => e.effect.notes).filter(Boolean) as string[], [state.activeEffects]);
+    // Lock choices
+    Array.from(elChoices.children).forEach(btn=>btn.disabled=true);
 
-  const currentMultiplier = useMemo(() => {
-    let m = baseMultiplier;
-    for (const e of state.activeEffects) {
-      if (e.effect.waveMultiplier && e.remaining > 0) m *= e.effect.waveMultiplier;
+    // Continue button
+    const cont = document.createElement('div'); cont.style.marginTop='10px';
+    const b = document.createElement('button'); b.textContent = 'Continuer →'; b.addEventListener('click', nextStep); cont.appendChild(b); elResult.appendChild(cont);
+
+    // Vox flavor
+    voxPick(choice.id);
+  }
+
+  function voxPick(id){
+    const lines = {
+      def_ext:["Sections blindées pressurisées. Artillerie en ligne."],
+      intercept:["Détachement en vol. Coordonnées d’interception verrouillées."],
+      batteries:["Batteries orbitales : condensateurs à 97%."],
+      evac:["Civils en déplacement. Itinéraires sanctifiés ouverts."],
+      assault:["Contre-attaque bénie par le trône !"],
+      lockdown:["Cloisons scellées. Couloirs purgés."],
+      synapse:["Cible prioritaire : signatures synaptiques."],
+      elites:["Réserves d’élite déployées. Choc imminent."],
+      repair:["Tech-adeptes à l’œuvre. Rituels de maintenance récités."],
+      sos:["Signal astropathique en émission continue."],
+      sacrifice:["Purge sectorielle. Que l’encens masque les cendres."],
+      rally:["Bannières au vent ! Discipline de fer !"]
+    };
+    vox(lines[id][0]);
+  }
+
+  function nextStep(){
+    if (state.phaseIndex < PHASES.length - 1){
+      state.phaseIndex += 1;
+    } else {
+      endOfRoundSummary();
+      if (state.round < MAX_ROUNDS){ state.round += 1; state.phaseIndex = 0; } else { endOfMission(); return; }
     }
-    return Number(m.toFixed(2));
-  }, [state.activeEffects, baseMultiplier]);
+    render();
+  }
 
-  const currentBias = useMemo<Partial<WaveComposition>>(() => {
-    const bias: Partial<WaveComposition> = {};
-    for (const e of state.activeEffects) {
-      if (e.remaining > 0 && e.effect.spawnBias) {
-        for (const k of Object.keys(e.effect.spawnBias) as (keyof WaveComposition)[]) {
-          const val = e.effect.spawnBias[k]!;
-          (bias as any)[k] = ((bias as any)[k] ?? 0) + val;
-        }
-      }
-    }
-    return bias;
-  }, [state.activeEffects]);
+  function endOfRoundSummary(){
+    const reinf = reinforcementsFor(state.threat);
+    pushLog(`⟲ Fin du round ${state.round}. Menace ${state.threat}. Préparez ${reinf.units} renfort(s) tyranide(s) (${reinf.note}) pour le prochain tour.`);
+    vox(`Fin de round ${state.round}. ${reinf.units} signatures en approche : ${reinf.note}.`);
+  }
 
-  const auspexActive = useMemo(() => state.activeEffects.some((e) => e.effect.id === "auspex" && e.remaining > 0), [state.activeEffects]);
+  function endOfMission(){
+    const t = state.threat; const reinfBonus = state.flags.reinforcementsBonusGranted;
+    let verdict;
+    if (t >= 9){ verdict = "Victoire tyranide : le Bastion est submergé dans un assaut total."; flare('Défaite', verdict, false); }
+    else if (reinfBonus || t <= 4){ verdict = "Victoire impériale : tenue jusqu’à l’arrivée de la flotte de secours / stabilisation des secteurs."; flare('Victoire', verdict, true); }
+    else { verdict = "Issue incertaine : la plateforme tient, mais au prix de lourdes pertes et de secteurs perdus."; flare('Issue incertaine', verdict, true); }
 
-  const budget = useMemo(() => {
-    const base = baseWaveForThreat(state.threat);
-    const varFactor = auspexActive ? variance * 0.7 : variance;
-    const spread = base * varFactor;
-    const roll = (rand(seedRef) * 2 - 1) * spread; // [-spread, +spread]
-    return Math.max(6, Math.round((base + roll) * currentMultiplier));
-  }, [state.threat, variance, currentMultiplier, auspexActive]);
+    const summary = `
+===== FIN DE MISSION =====
+Menace finale: ${t}/10
+${state.flags.reinforcementsBonusGranted?"Renforts de secours reçus (+500 pts).":"Aucun renfort de secours reçu."}
+Verdict: ${verdict}`;
+    pushLog(summary);
 
-  const nextWave = useMemo(() => compoFromBudget(budget, () => rand(seedRef), currentBias), [budget, currentBias]);
+    elStory.innerHTML = `<p><b>Fin des 5 rounds.</b> ${verdict}</p>`;
+    elChoices.innerHTML = '';
+    elResult.style.display = 'block';
+    elResult.innerHTML = `<h4>Résumé</h4><ul>
+      <li><b>Menace finale</b> : ${t} / 10</li>
+      <li><b>Renforts de secours</b> : ${state.flags.reinforcementsBonusGranted?"Débarqués (+500 pts)":"Non arrivés"}</li>
+      <li><b>Recommandation</b> : appliquez pertes, secteurs détruits et PC restants selon le journal.</li>
+    </ul>
+    <div style="margin-top:10px"><button id="again">Rejouer</button></div>`;
+    document.getElementById('again').addEventListener('click', resetGame);
+  }
 
-  const narrate = (msg: string) => setState((s) => ({ ...s, log: [
-    `${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — ${msg}`,
-    ...s.log,
-  ] }));
+  function flare(title, text, good){
+    banner.style.display = 'grid';
+    banner.innerHTML = `<div class=\"card\"><h2>${title}</h2><p>${text}</p><button id=\"closeB\">Fermer</button></div>`;
+    document.getElementById('closeB').onclick = ()=> banner.style.display='none';
+    if (audioOn) beep(good?880:220, .25, .25);
+  }
 
-  const drawChoices = () => {
-    const drawn = pickN(choicesPool, 4, () => rand(seedRef));
-    setDrawnChoices(drawn);
-    narrate("Les vox crépitent : le Commandement impose de choisir une directive.");
-  };
+  function pushLog(text){
+    const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    const entry = `[${stamp}]
+${text}`;
+    state.log.push(entry);
+    const div = document.createElement('div'); div.className = 'log-entry'; div.textContent = entry; elLog.appendChild(div); elLog.scrollTop = elLog.scrollHeight;
+  }
 
-  const applyChoice = (c: Choice) => {
-    setDrawnChoices([]);
-    setState((s) => {
-      const newThreat = clamp(s.threat + c.effect.threatDelta);
-      const newEffects = [
-        ...s.activeEffects
-          .map((e) => ({ ...e }))
-          .filter((e) => e.remaining > 0),
-      ];
-      if (c.effect.durationRounds > 0) {
-        newEffects.push({ effect: c.effect, remaining: c.effect.durationRounds });
-      }
-      // Narration SEULE: ne pas dévoiler bonus/malus
-      const line = `Directive adoptée — ${c.title}. Les parchemins data bourdonnent, des sceaux sont brisés, et les serviteurs se mettent en mouvement.`;
-      const ns = {
-        ...s,
-        threat: newThreat,
-        activeEffects: newEffects,
-        log: [line, ...s.log],
-      };
-      return ns;
-    });
-  };
+  function exportLog(){
+    const header = `Bastion Kheprios — Journal de mission (5 rounds)
+`+
+                   `=============================================
+`;
+    const content = header + state.log.join("
 
-  const applyStoryEvent = () => {
-    const ev = pickN(STORY_EVENTS, 1, () => rand(seedRef))[0];
-    if (!ev) return;
-    // appliquer effets cachés
-    setState((s) => {
-      let menace = clamp(s.threat + (ev.effect?.threatDelta ?? 0));
-      let effects = [...s.activeEffects];
-      if (ev.effect?.durationRounds && ev.effect.durationRounds > 0) {
-        effects.push({ effect: { id: ev.id, name: ev.title, description: ev.hidden || "", durationRounds: ev.effect.durationRounds, threatDelta: 0, waveMultiplier: ev.effect.waveMultiplier, spawnBias: ev.effect.spawnBias }, remaining: ev.effect.durationRounds });
-      }
-      // log narratif
-      const text = ev.body.replaceAll("{DEF}", defenderName).replaceAll("{ATT}", attackerName);
-      return { ...s, threat: menace, activeEffects: effects, log: [text, ...s.log] };
-    });
-  };
-
-  const advanceTurn = () => {
-    setState((s) => ({ ...s, turn: s.turn + 1, phase: "Début de tour" }));
-    // 50% d'avoir un événement narratif mineur en début de tour
-    if (rand(seedRef) < 0.5) applyStoryEvent();
-    drawChoices();
-  };
-
-  const advanceRound = () => {
-    setState((s) => {
-      // effets de fin de round (ex: surcharge +5 menace)
-      let menace = s.threat;
-      for (const e of s.activeEffects) {
-        if (e.remaining > 0 && e.effect.id === "overcharge") {
-          menace = clamp(menace + 5);
-        }
-      }
-      const decayed = s.activeEffects
-        .map((e) => ({ ...e, remaining: Math.max(0, e.remaining - 1) }))
-        .filter((e) => e.remaining > 0);
-      const r = s.round + 1;
-      const t = 1;
-      const newState = { ...s, round: r, turn: t, phase: "Début de round", threat: menace, activeEffects: decayed };
-      return newState;
-    });
-    narrate("Les cloches ferraillent. Le voile de fumée se lève sur un nouveau théâtre de carnage.");
-    // Événement narratif majeur garanti au début de chaque round
-    applyStoryEvent();
-    drawChoices();
-  };
-
-  const spawnWaveNow = () => {
-    const text = showMechanics ? `${formatWave(nextWave) || "petits éclaireurs"}` : "Une masse chitineuse déferle ; ailes de cuir, griffes pendulaires et silhouettes titanesques s'imposent aux projecteurs.";
-    narrate(`VAGUE ${state.round}.${state.turn} — ${text}`);
-    // petite chance d'événement pendant la vague
-    if (rand(seedRef) < 0.35) applyStoryEvent();
-    setState((s) => ({ ...s, phase: "Après vague" }));
-  };
-
-  const resetAll = () => {
-    setState({ round: 1, turn: 1, phase: "Début de round", threat: 25, activeEffects: [], log: ["Système réinitialisé : les auspex se remettent à zéro, les cierges sont rallumés."], seed: Math.floor(Math.random() * 1e9) });
-    setDrawnChoices([]);
-  };
-
-  const undoLast = () => {
-    if (state.phase === "Après vague") {
-      setState((s) => ({ ...s, phase: "Début de tour" }));
-      narrate("Les archives reviennent en arrière, comme si un scribe avait gratté l'encre fraîche.");
-    }
-  };
-
-  // -------- Export/Import --------
-  const exportJSON = () => {
-    const blob = new Blob(
-      [
-        JSON.stringify(
-          { state, choicesPool, settings: { variance, baseMultiplier, defenderName, attackerName, showMechanics } },
-          null,
-          2
-        ),
-      ],
-      { type: "application/json" }
-    );
+") + "
+";
+    const blob = new Blob([content], {type:'text/plain'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `orchestrateur-tyranide-round${state.round}-tour${state.turn}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    const a = document.createElement('a'); a.href = url; a.download = 'journal_bastion_kheprios.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
 
-  const importRef = useRef<HTMLInputElement | null>(null);
-  const importJSON = async (file: File) => {
-    const text = await file.text();
-    const obj = JSON.parse(text);
-    setState(obj.state);
-    setChoicesPool(obj.choicesPool ?? CHOICES_LIBRARY);
-    setVariance(obj.settings?.variance ?? 0.25);
-    setBaseMultiplier(obj.settings?.baseMultiplier ?? 1);
-    setDefenderName(obj.settings?.defenderName ?? defenderName);
-    setAttackerName(obj.settings?.attackerName ?? attackerName);
-    setShowMechanics(obj.settings?.showMechanics ?? false);
-    seedRef.current = obj.state.seed ?? Math.floor(Math.random() * 1e9);
-    narrate("Scénario importé.");
-  };
+  function resetGame(){
+    state.round = 1; state.phaseIndex = 0; state.threat = 3;
+    state.flags.distressAtRound = null; state.flags.reinforcementsBonusGranted = false;
+    state.log.length = 0;
+    render();
+    pushLog('— Réinitialisation —');
+  }
 
-  // -------- UI --------
-  return (
-    <div className="min-h-screen p-6 max-w-7xl mx-auto space-y-6 bg-gradient-to-b from-zinc-950 via-neutral-950 to-black text-zinc-100">
-      <header className="flex items-center justify-between border-b border-zinc-700 pb-4">
-        <div className="flex items-center gap-3">
-          <SkullHeader />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">Orchestrateur – Assaut Tyranide</h1>
-            <p className="text-sm text-zinc-400">{attackerName} vs {defenderName} · 1 envahisseur contre 6 défenseurs · Chronique de siège</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={exportJSON}><Download className="w-4 h-4 mr-2"/>Exporter</Button>
-          <Button variant="outline" onClick={() => importRef.current?.click()}><Upload className="w-4 h-4 mr-2"/>Importer</Button>
-          <input ref={importRef} type="file" accept="application/json" className="hidden" onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) importJSON(f);
-          }}/>
-        </div>
-      </header>
+  // ===== TOAST / VOX =====
+  function vox(msg){ const d=document.createElement('div'); d.className='t'; d.textContent = `VOX: ${msg}`; toast.appendChild(d); setTimeout(()=>d.remove(), 4200); if(audioOn) beep(660,.06,.15) }
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Panneau statut */}
-        <Card className="lg:col-span-2 bg-neutral-950/60 border border-zinc-800 backdrop-blur">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Statut de bataille</CardTitle>
-            <Badge className={`${threatLevel.color} text-white`}>{threatLevel.label}</Badge>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <GothicStat label="Round" value={state.round} />
-              <GothicStat label="Tour" value={state.turn} />
-              <GothicStat label="Phase" value={state.phase} small />
-              <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-center">
-                <div className="text-xs uppercase text-zinc-400">Menace</div>
-                <div className="text-2xl font-semibold">{state.threat}</div>
-                <div className="text-xs text-zinc-400">{threatLevel.hint}</div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Menace (ajustement manuel si besoin)</Label>
-              <div className="flex items-center gap-4">
-                <Slider value={[state.threat]} min={0} max={100} step={1} onValueChange={(v) => setState((s) => ({ ...s, threat: v[0] }))} className="flex-1"/>
-                <Input type="number" value={state.threat} onChange={(e) => setState((s) => ({ ...s, threat: clamp(parseInt(e.target.value || "0")) }))} className="w-24"/>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-zinc-900/50 border border-zinc-800">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Prochaine vague</CardTitle></CardHeader>
-                <CardContent>
-                  {showMechanics ? (
-                    <>
-                      <div className="text-sm text-zinc-400">Budget: {budget} · Multiplicateur: x{currentMultiplier}</div>
-                      <div className="mt-2 text-lg">{formatWave(nextWave) || "—"}</div>
-                      {activeNotes.length > 0 && (
-                        <div className="text-xs mt-2 opacity-80">Notes: {activeNotes.join("; ")}</div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="text-sm text-zinc-300">Les augures prédisent un fracas d'ailes et de carapaces ; la plateforme sera éprouvée.</div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex gap-2">
-                  <Button onClick={spawnWaveNow}><Sword className="w-4 h-4 mr-2"/>Lancer la Vague</Button>
-                  <Button variant="secondary" onClick={undoLast}><Undo2 className="w-4 h-4 mr-2"/>Annuler</Button>
-                </CardFooter>
-              </Card>
-
-              <Card className="bg-zinc-900/50 border border-zinc-800">
-                <CardHeader className="pb-2"><CardTitle className="text-base">Effets actifs</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  {state.activeEffects.length === 0 && <div className="text-sm text-zinc-400">Aucun présage en cours.</div>}
-                  {state.activeEffects.map((e) => (
-                    <div key={e.effect.id} className="flex items-center justify-between p-2 rounded-lg bg-zinc-950 border border-zinc-800">
-                      <div>
-                        <div className="font-medium">{e.effect.name}</div>
-                        {showMechanics ? (
-                          <div className="text-xs text-zinc-400">{e.effect.description}</div>
-                        ) : (
-                          <div className="text-xs text-zinc-500">Influence occulte sur le champ de bataille</div>
-                        )}
-                      </div>
-                      <Badge variant="secondary">{e.remaining} r.</Badge>
-                    </div>
-                  ))}
-                </CardContent>
-                <CardFooter className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => drawChoices()}><Shuffle className="w-4 h-4 mr-2"/>Proposer 4 Choix</Button>
-                  <Button variant="ghost" onClick={() => advanceTurn()}><FastForward className="w-4 h-4 mr-2"/>Tour suivant</Button>
-                  <Button variant="ghost" onClick={() => advanceRound()}><RotateCcw className="w-4 h-4 mr-2"/>Fin de round</Button>
-                  <div className="ml-auto flex items-center gap-2">
-                    <Switch id="mech" checked={showMechanics} onCheckedChange={setShowMechanics}/>
-                    <Label htmlFor="mech" className="text-xs">Afficher les détails mécaniques</Label>
-                  </div>
-                </CardFooter>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Panneau configuration & narration */}
-        <Card className="bg-neutral-950/60 border border-zinc-800">
-          <CardHeader>
-            <CardTitle>Chapitre & Rituel</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nom de l'envahisseur</Label>
-              <Input value={attackerName} onChange={(e) => setAttackerName(e.target.value)} />
-              <Label>Nom des défenseurs</Label>
-              <Input value={defenderName} onChange={(e) => setDefenderName(e.target.value)} />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Variance des vagues</Label>
-              <Slider value={[variance]} min={0} max={0.6} step={0.05} onValueChange={(v) => setVariance(Number(v[0]))} />
-              <div className="text-xs text-zinc-400">Auspex réduit la variance lorsque présent.</div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Multiplicateur global des vagues</Label>
-              <Slider value={[baseMultiplier]} min={0.5} max={1.8} step={0.05} onValueChange={(v) => setBaseMultiplier(Number(v[0]))} />
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2">
-              <Label>Chronique</Label>
-              <div className="h-64 overflow-auto rounded-lg border border-zinc-800 p-2 bg-black/50 text-sm leading-relaxed">
-                {state.log.map((line, idx) => (
-                  <div key={idx} className="opacity-90">{line}</div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Button variant="destructive" onClick={resetAll}><RotateCcw className="w-4 h-4 mr-2"/>Purger & Recommencer</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Choix modaux */}
-      <Dialog open={drawnChoices.length > 0}>
-        <DialogContent className="max-w-3xl bg-neutral-950 border border-zinc-800">
-          <DialogHeader>
-            <DialogTitle>Conseil de Guerre — Sélectionnez 1 directive</DialogTitle>
-            <DialogDescription className="text-zinc-400">
-              À chaque début de round ou de tour, choisissez une directive. Son véritable prix ne sera révélé qu'aux archives…
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid md:grid-cols-2 gap-4">
-            {drawnChoices.map((c) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                <Card className="h-full bg-zinc-900/50 border border-zinc-800">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2"><Wand2 className="w-4 h-4"/>{c.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-zinc-300 mb-2">{c.body}</p>
-                    {/* Effets cachés : pas d'affichage de description/notes */}
-                  </CardContent>
-                  <CardFooter>
-                    <Button onClick={() => applyChoice(c)} className="w-full">Proclamer la directive</Button>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDrawnChoices([])}>Refermer</Button>
-            <Button variant="secondary" onClick={() => drawChoices()}><Shuffle className="w-4 h-4 mr-2"/>Nouvelles options</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Éditeur de choix */}
-      <ChoicesEditor pool={choicesPool} onChange={setChoicesPool} />
-
-      <footer className="text-xs text-zinc-500 pt-4 border-t border-zinc-800">
-        Conseils : utilisez l'export JSON pour vos bibles de campagne. Les valeurs restent abstraites pour s'adapter à toute édition. Activez l'affichage mécanique lors du brief organisateur seulement.
-      </footer>
-    </div>
-  );
-}
-
-function SkullHeader() {
-  return (
-    <div className="relative">
-      <div className="absolute inset-0 blur-xl bg-red-900/20 rounded-full" />
-      <div className="relative flex items-center justify-center w-12 h-12 rounded-full border border-zinc-700 bg-zinc-950">
-        <svg viewBox="0 0 24 24" className="w-6 h-6"><path fill="currentColor" d="M12 2c-4.4 0-8 3.1-8 7 0 2 .8 3.7 2.1 5-.1.6-.1 1.2.1 1.8.4 1.2 1.5 2.2 2.8 2.2h6c1.3 0 2.4-1 2.8-2.2.2-.6.2-1.2.1-1.8C19.2 12.7 20 11 20 9c0-3.9-3.6-7-8-7Zm-4 14h2v2H8v-2Zm6 0h2v2h-2v-2Z"/></svg>
-      </div>
-    </div>
-  );
-}
-
-function GothicStat({ label, value, small }: { label: string; value: any; small?: boolean }) {
-  return (
-    <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-center">
-      <div className="text-xs uppercase text-zinc-400">{label}</div>
-      <div className={`${small ? "text-lg" : "text-2xl"} font-semibold`}>{value}</div>
-    </div>
-  );
-}
+  // INIT (deferred after intro start)
+  </script>
+</body>
+</html>
