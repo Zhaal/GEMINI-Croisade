@@ -628,7 +628,7 @@ function afficherPhase() {
   choicesEl.innerHTML = "";
   choixMelanges.forEach((c) => {
     const btn = document.createElement("div");
-    btn.className = "choice";
+    btn.className = "choice hidden";
     btn.innerHTML = `<div class="c-title">${c.texte}</div>`;
     btn.addEventListener("click", () => choisir(c));
     choicesEl.appendChild(btn);
@@ -641,6 +641,12 @@ function afficherPhase() {
 
   typeNarration(p.narration, () => {
     choicesEl.style.display = "flex";
+    Array.from(choicesEl.children).forEach((child, idx) => {
+      setTimeout(() => {
+        child.classList.remove("hidden");
+        requestAnimationFrame(() => child.classList.add("visible"));
+      }, idx * 1000);
+    });
   });
 }
 
