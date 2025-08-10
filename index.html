@@ -4,7 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Warhammer 40k — Bataille Narrative : Le Promontoire</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=UnifrakturCook:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme.css">
 </head>
 <body>
   <div id="startScreen" class="start-screen">
@@ -13,7 +17,7 @@
 
   <div id="game" style="display:none;">
     <header>
-      <div class="brand">⚔️ <b>Le Promontoire</b> — Bataille narrative 40k</div>
+      <div class="brand">✠ <b>Le Promontoire</b> — Bataille narrative 40k</div>
       <div class="controls">
         <label class="toggle"><input id="sfxToggle" type="checkbox" checked/> Effets sonores</label>
         <button class="btn secondary" id="restartBtn" title="Recommencer">Recommencer</button>
@@ -22,6 +26,10 @@
     </header>
 
     <div class="wrap">
+      <div class="corner-deco corner-top-left"></div>
+      <div class="corner-deco corner-top-right"></div>
+      <div class="corner-deco corner-bottom-left"></div>
+      <div class="corner-deco corner-bottom-right"></div>
       <section class="stage">
         <div class="stage-header">
           <span class="badge"><span class="dot"></span><span id="badgeTour">Tour 1</span></span>
