@@ -639,6 +639,9 @@ function afficherPhase() {
   nextBtn.style.display = "none";
   nextBtn.disabled = true;
 
+  const bonusSummaryEl = document.getElementById("bonus-summary");
+  bonusSummaryEl.style.display = "none";
+
   // Show choices after a delay
   setTimeout(() => {
     choicesEl.style.display = "flex";
@@ -668,14 +671,16 @@ function choisir(choix) {
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 
-  modalTitle.textContent = choix.texte;
-  modalText.innerHTML = `<p id="fluff" class="wow">${choix.fluff}</p><p id="bonus" class="wow hidden"><em>${choix.bonus}</em></p>`;
-  modalMeta.textContent = "";
   lastTagEl.textContent = eff.length ? eff.join(" | ") : "—";
-  showModal(true);
-  setTimeout(() => document.getElementById("bonus").classList.remove("hidden"), 2000);
 
+  choicesEl.style.display = "none";
+  nextBtn.style.display = "";
   nextBtn.disabled = false;
+  const bonusSummaryEl = document.getElementById("bonus-summary");
+  bonusSummaryEl.style.display = "";
+  bonusSummaryEl.innerHTML = `<em>${choix.bonus}</em>`;
+
+  // Prevent further choices until the next phase
   choicesEl.style.pointerEvents = "none";
 }
 
@@ -694,7 +699,11 @@ function updateBattleState() {
     if (!p) return;
     const round = p.round;
     const unitsToDeploy = 10 + tyr;
-    battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
+    if (p.phase === "Phase de Commandement") {
+        battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
+    } else {
+        battleStateEl.innerHTML = "Survivez !";
+    }
 }
 
 // --- Navigation / Modale ---
@@ -703,16 +712,16 @@ function showModal(state) {
 }
 modalOk.addEventListener("click", () => {
   showModal(false);
-  nextBtn.style.display = "";
 });
 document.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && modal.classList.contains("show")) {
     showModal(false);
-    nextBtn.style.display = "";
   }
 });
 
 nextBtn.addEventListener("click", () => {
+  const bonusSummaryEl = document.getElementById("bonus-summary");
+  bonusSummaryEl.style.display = "none";
   nextBtn.style.display = "none";
   if (phaseIndex < phases.length - 1) {
     phaseIndex++;
@@ -747,11 +756,6 @@ function finDePartie() {
 
   const resume = `Bilan final → Menace ${menace} | Arrivées Tyranides ${tyr}.`;
   logEl.innerHTML += `<div><b>Fin :</b> ${verdict} <span class="meta">(${resume})</span></div>`;
-
-  modalTitle.textContent = "Bilan de Campagne";
-  modalText.textContent = verdict;
-  modalMeta.textContent = resume;
-  showModal(true);
 
   nextBtn.disabled = true;
 }
