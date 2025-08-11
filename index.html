@@ -46,6 +46,7 @@
         <div class="choices" id="choices"></div>
 
         <div class="footer-controls">
+          <button class="btn ghost" id="skipBtn" title="Afficher un autre ordre de choix (sans changer la phase)">Remélanger</button>
         </div>
       </section>
 
@@ -56,6 +57,10 @@
             <div class="meter">
               <div class="statline"><span>Menace</span><span><b id="menaceVal">0</b></span></div>
               <div class="bar"><div id="menaceFill" class="fill" style="width:12%"></div></div>
+            </div>
+            <div class="meter">
+              <div class="statline"><span>Arrivées Tyranides (indicatif)</span><span><b id="tyrVal">0</b></span></div>
+              <div class="bar"><div id="tyrFill" class="fill" style="width:8%"></div></div>
             </div>
             <div class="statline"><span>Phase</span><span id="hudPhase">1 / 15</span></div>
             <div class="statline"><span>Dernière résolution</span><span id="lastTag" class="tag">—</span></div>
