@@ -5,8 +5,8 @@
 
 // Effets numériques approximatifs selon le tag
 const effMap = {
-  "Faveur majeure": { menace: -2, tyr: -2 },
-  "Faveur mineure": { menace: -1, tyr: -1 },
+  "Faveur majeure": { menace: -2, tyr: -1 },
+  "Faveur mineure": { menace: -1, tyr: -0 },
   "Défaveur mineure": { menace: +1, tyr: +1 },
   "Défaveur majeure": { menace: +2, tyr: +2 },
 };
