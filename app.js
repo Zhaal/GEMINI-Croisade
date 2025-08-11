@@ -571,7 +571,6 @@ const modalText     = document.getElementById("modalText");
 const modalMeta     = document.getElementById("modalMeta");
 const modalOk       = document.getElementById("modalOk");
 const nextBtn       = document.getElementById("nextBtn");
-const skipBtn       = document.getElementById("skipBtn");
 const restartBtn    = document.getElementById("restartBtn");
 const logEl         = document.getElementById("log");
 const badgeRoundEl  = document.getElementById("badgeRound");
@@ -731,10 +730,6 @@ nextBtn.addEventListener("click", () => {
   } else {
     finDePartie();
   }
-});
-
-skipBtn.addEventListener("click", () => {
-  afficherPhase();
 });
 
 restartBtn.addEventListener("click", init);
