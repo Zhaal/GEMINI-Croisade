@@ -583,7 +583,9 @@ const gameEl        = document.getElementById("game");
 // --- Utils ---
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function percentFrom(val, scale = 25) {
-  return clamp(Math.round((clamp(val, 0, scale) / scale) * 100), 0, 100);
+  const normalizedVal = clamp(val, -scale, scale);
+  const percentage = ((normalizedVal + scale) / (2 * scale)) * 100;
+  return clamp(Math.round(percentage), 0, 100);
 }
 
 // --- Initialisation ---
