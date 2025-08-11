@@ -693,11 +693,8 @@ function updateBattleState() {
     const p = phases[phaseIndex];
     if (!p) return;
     const round = p.round;
-    let unitsToDeploy = 10;
-    if (round > 1) {
-        unitsToDeploy = 10 + tyr;
-    }
-  battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
+    const unitsToDeploy = 10 + tyr;
+    battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
 }
 
 // --- Navigation / Modale ---
