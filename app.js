@@ -625,7 +625,7 @@ function afficherPhase() {
   }, 100);
 
 
-  const choixMelanges = [...p.choix].sort(() => Math.random() - 0.5);
+  const choixMelanges = [...p.choix];
   choicesEl.innerHTML = "";
   choixMelanges.forEach((c) => {
     const btn = document.createElement("div");
