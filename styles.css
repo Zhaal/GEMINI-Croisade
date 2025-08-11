@@ -352,3 +352,8 @@ header .controls {
     transform: scale(1);
   }
 }
+
+/* Hide numeric values for meters */
+.meter .statline span:last-child {
+  display: none;
+}
