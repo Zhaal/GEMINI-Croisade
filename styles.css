@@ -116,6 +116,15 @@ header .controls {
   gap: .5em;
 }
 
+.battle-state {
+    text-align: center;
+    padding: 0.5em;
+    background: #111;
+    border-bottom: 1px solid #333;
+    font-size: 1.1em;
+    color: #d4af37;
+}
+
 .toggle {
   display: flex;
   align-items: center;
