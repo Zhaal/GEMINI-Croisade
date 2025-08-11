@@ -36,7 +36,17 @@ h3, h4 {
   border: 1px solid var(--color-parchment-dark);
   box-shadow: 0 0 15px rgba(0,0,0,0.7);
   border-radius: 0;
-  color: var(--color-text);
+  /* color: var(--color-text); */ /* This was causing inheritance issues */
+}
+
+/* Apply text color directly to elements on parchment background */
+.panel .statline,
+.modal .fx,
+.narration,
+.phase-title,
+.choice,
+.log {
+    color: var(--color-text);
 }
 
 header {
