@@ -555,6 +555,7 @@ let tyr = 0;
 let phaseIndex = 0;
 
 // --- Éléments DOM ---
+const battleStateEl = document.getElementById("battleState");
 const narrationEl   = document.getElementById("narration");
 const phaseTitleEl  = document.getElementById("phaseTitle");
 const choicesEl     = document.getElementById("choices");
@@ -684,6 +685,19 @@ function updateHUD() {
   tyrValEl.textContent = tyr;
   menaceFillEl.style.width = percentFrom(menace, 25) + "%";
   tyrFillEl.style.width    = percentFrom(tyr, 25) + "%";
+  updateBattleState();
+}
+
+// --- Battle State ---
+function updateBattleState() {
+    const p = phases[phaseIndex];
+    if (!p) return;
+    const round = p.round;
+    let unitsToDeploy = 10;
+    if (round > 1) {
+        unitsToDeploy = 10 + tyr;
+    }
+  battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
 }
 
 // --- Navigation / Modale ---
