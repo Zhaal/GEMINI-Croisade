@@ -139,7 +139,7 @@ header .brand {
   border: 1px solid var(--color-parchment-dark);
   padding: 0.5em;
   max-height: 250px;
-  color: var(--color-text);
+  color: #000;
 }
 
 /* --- Narration & Scanlines --- */
