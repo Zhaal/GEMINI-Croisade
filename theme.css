@@ -5,9 +5,9 @@
   --font-title: 'UnifrakturCook', cursive;
   --font-body: 'Special Elite', monospace;
 
-  --color-parchment: #000;
+  --color-parchment: #c5b49a;
   --color-parchment-dark: #a18f71;
-  --color-text: #000;
+  --color-text: #000000;
   --color-red: #8a0303;
   --color-gold: #d4af37;
   --color-metal: #4f5858;
@@ -18,7 +18,7 @@ body {
   background:
     radial-gradient(ellipse at center, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%),
     radial-gradient(ellipse at center, #c5b49a 0%, #a18f71 100%);
-  color: var(--color-text);
+  color: var(--color-parchment);
 }
 
 h3, h4 {
@@ -36,6 +36,7 @@ h3, h4 {
   border: 1px solid var(--color-parchment-dark);
   box-shadow: 0 0 15px rgba(0,0,0,0.7);
   border-radius: 0;
+  color: var(--color-text);
 }
 
 header {
@@ -43,7 +44,7 @@ header {
   border-bottom: 5px solid;
   border-image: linear-gradient(to right, transparent, var(--color-metal), transparent) 1;
   padding: 0.5em 1em;
-  color: var(--color-text);
+  color: var(--color-parchment);
 }
 
 header .brand {
@@ -58,7 +59,7 @@ header .brand {
   font-family: var(--font-body);
   background: linear-gradient(to bottom, #5a5a5a, #333);
   border: 2px outset #666;
-  color: var(--color-text);
+  color: var(--color-parchment);
   padding: .6em 1.2em;
   border-radius: 0;
   cursor: pointer;
@@ -139,7 +140,7 @@ header .brand {
   border: 1px solid var(--color-parchment-dark);
   padding: 0.5em;
   max-height: 250px;
-  color: var(--color-text);
+  color: #000;
 }
 
 /* --- Narration & Scanlines --- */
@@ -189,7 +190,7 @@ header .brand {
 /* --- Misc --- */
 .badge {
   background: var(--color-red);
-  color: var(--color-text);
+  color: var(--color-parchment);
   border-radius: 0;
   text-shadow: 1px 1px 1px #000;
 }
@@ -200,7 +201,7 @@ header .brand {
 
 .tag {
   background: var(--color-metal);
-  color: var(--color-text);
+  color: var(--color-parchment);
   border-radius: 0;
 }
 
