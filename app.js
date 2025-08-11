@@ -5,10 +5,10 @@
 
 // Effets numériques approximatifs selon le tag
 const effMap = {
-  "Faveur majeure": { menace: -2, tyr: -1 },
-  "Faveur mineure": { menace: -1, tyr: -0 },
-  "Défaveur mineure": { menace: +1, tyr: +1 },
-  "Défaveur majeure": { menace: +2, tyr: +2 },
+  "Faveur majeure": { menace: -2 },
+  "Faveur mineure": { menace: -1 },
+  "Défaveur mineure": { menace: +1 },
+  "Défaveur majeure": { menace: +2 },
 };
 
 // --- Données de scénario (5 rounds × 3 phases) ---
@@ -551,7 +551,6 @@ const phases = [
 
 // --- État ---
 let menace = 0;
-let tyr = 0;
 let phaseIndex = 0;
 
 // --- Éléments DOM ---
@@ -561,8 +560,6 @@ const phaseTitleEl  = document.getElementById("phaseTitle");
 const choicesEl     = document.getElementById("choices");
 const menaceValEl   = document.getElementById("menaceVal");
 const menaceFillEl  = document.getElementById("menaceFill");
-const tyrValEl      = document.getElementById("tyrVal");
-const tyrFillEl     = document.getElementById("tyrFill");
 const hudPhaseEl    = document.getElementById("hudPhase");
 const lastTagEl     = document.getElementById("lastTag");
 const modal         = document.getElementById("modal");
@@ -571,7 +568,6 @@ const modalText     = document.getElementById("modalText");
 const modalMeta     = document.getElementById("modalMeta");
 const modalOk       = document.getElementById("modalOk");
 const nextBtn       = document.getElementById("nextBtn");
-const skipBtn       = document.getElementById("skipBtn");
 const restartBtn    = document.getElementById("restartBtn");
 const logEl         = document.getElementById("log");
 const badgeRoundEl  = document.getElementById("badgeRound");
@@ -582,7 +578,7 @@ const gameEl        = document.getElementById("game");
 
 // --- Utils ---
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-function percentFrom(val, scale = 25) {
+function percentFrom(val, scale = 100) {
   const normalizedVal = clamp(val, -scale, scale);
   const percentage = ((normalizedVal + scale) / (2 * scale)) * 100;
   return clamp(Math.round(percentage), 0, 100);
@@ -591,7 +587,6 @@ function percentFrom(val, scale = 25) {
 // --- Initialisation ---
 function init() {
   menace = 0;
-  tyr = 0;
   phaseIndex = 0;
   logEl.innerHTML = "";
   lastTagEl.textContent = "—";
@@ -661,11 +656,9 @@ function choisir(choix) {
   const p = phases[phaseIndex];
 
   menace += choix.effet.menace || 0;
-  tyr    += choix.effet.tyr    || 0;
   updateHUD();
   const eff = [];
   if (choix.effet.menace) eff.push(`Menace ${choix.effet.menace > 0 ? "+" : ""}${choix.effet.menace}`);
-  if (choix.effet.tyr)    eff.push(`Arrivées Tyranides ${choix.effet.tyr > 0 ? "+" : ""}${choix.effet.tyr}`);
   const effStr = eff.length ? `Effets : ${eff.join(" | ")}` : "";
 
   const line = document.createElement("div");
@@ -689,9 +682,7 @@ function choisir(choix) {
 // --- HUD ---
 function updateHUD() {
   menaceValEl.textContent = menace;
-  tyrValEl.textContent = tyr;
-  menaceFillEl.style.width = percentFrom(menace, 25) + "%";
-  tyrFillEl.style.width    = percentFrom(tyr, 25) + "%";
+  menaceFillEl.style.width = percentFrom(menace, 100) + "%";
   updateBattleState();
 }
 
@@ -700,9 +691,8 @@ function updateBattleState() {
     const p = phases[phaseIndex];
     if (!p) return;
     const round = p.round;
-    const unitsToDeploy = 10 + tyr;
     if (p.phase === "Phase de Commandement") {
-        battleStateEl.innerHTML = `État de la bataille : Round ${round} — Unités Tyranides à déployer: ${unitsToDeploy}`;
+        battleStateEl.innerHTML = `État de la bataille : Round ${round}`;
     } else {
         battleStateEl.innerHTML = "Survivez !";
     }
@@ -733,9 +723,6 @@ nextBtn.addEventListener("click", () => {
   }
 });
 
-skipBtn.addEventListener("click", () => {
-  afficherPhase();
-});
 
 restartBtn.addEventListener("click", init);
 
@@ -748,15 +735,15 @@ function finDePartie() {
   choicesEl.innerHTML = "";
 
   const verdict =
-    menace <= 0 && tyr <= 0
-      ? "Victoire éclatante — La plateforme demeure imprenable."
-      : menace <= 5 && tyr <= 5
-      ? "Victoire — L’ennemi recule en lambeaux."
-      : menace <= 10 && tyr <= 10
-      ? "Match nul sanglant — La plateforme tient, mais à quel prix."
-      : "Défaite — L’essaim submerge le promontoire.";
+    menace <= -50
+      ? "Victoire décisive — Le promontoire est sécurisé pour les générations à venir."
+      : menace <= 0
+      ? "Victoire — Les forces ennemies sont repoussées, la position est tenue."
+      : menace <= 50
+      ? "Match nul — Le promontoire tient, mais les pertes sont lourdes et l'avenir incertain."
+      : "Défaite — L'essaim submerge les défenses, le promontoire est perdu.";
 
-  const resume = `Bilan final → Menace ${menace} | Arrivées Tyranides ${tyr}.`;
+  const resume = `Bilan final → Menace ${menace}.`;
   logEl.innerHTML += `<div><b>Fin :</b> ${verdict} <span class="meta">(${resume})</span></div>`;
 
   nextBtn.disabled = true;
