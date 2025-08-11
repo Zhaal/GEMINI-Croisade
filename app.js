@@ -11,11 +11,11 @@ const effMap = {
   "Défaveur majeure": { menace: +2, tyr: +2 },
 };
 
-// --- Données de scénario (5 tours × 3 phases) ---
+// --- Données de scénario (5 rounds × 3 phases) ---
 const phases = [
-  // ===== TOUR 1 =====
+  // ===== ROUND 1 =====
   {
-    tour: 1,
+    round: 1,
     phase: "Phase de Commandement",
     narration: `Les capteurs du promontoire s’affolent. Dans le ciel ardent, des spores mycétiques percent la lumière comme une pluie empoisonnée. Le vent du désert soulève des nuages de sable, brouillant les capteurs et la vue. Les défenseurs doivent choisir leur première manœuvre stratégique.`,
     choix: [
@@ -50,7 +50,7 @@ const phases = [
     ],
   },
   {
-    tour: 1,
+    round: 1,
     phase: "Phase de Charge",
     narration: `Des silhouettes massives se détachent des tourbillons. Carnifex et Hormagaunts gravissent les pentes rocailleuses du promontoire.`,
     choix: [
@@ -85,7 +85,7 @@ const phases = [
     ],
   },
   {
-    tour: 1,
+    round: 1,
     phase: "Phase d’Ébranlement",
     narration: `Les ondes psychiques des Tyranides traversent les esprits comme un souffle brûlant.`,
     choix: [
@@ -120,9 +120,9 @@ const phases = [
     ],
   },
 
-  // ===== TOUR 2 =====
+  // ===== ROUND 2 =====
   {
-    tour: 2,
+    round: 2,
     phase: "Phase de Commandement",
     narration: `Les spores qui ont survécu à l’assaut initial se fendent et libèrent des nuées voraces qui escaladent les pentes rocheuses. Les alarmes du promontoire saturent les canaux.`,
     choix: [
@@ -157,7 +157,7 @@ const phases = [
     ],
   },
   {
-    tour: 2,
+    round: 2,
     phase: "Phase de Charge",
     narration: `Les dunes tremblent sous les pas de monstres, escortés d’essaims rapides.`,
     choix: [
@@ -192,7 +192,7 @@ const phases = [
     ],
   },
   {
-    tour: 2,
+    round: 2,
     phase: "Phase d’Ébranlement",
     narration: `Les ondes synaptiques saturent l’air chaud.`,
     choix: [
@@ -227,9 +227,9 @@ const phases = [
     ],
   },
 
-  // ===== TOUR 3 =====
+  // ===== ROUND 3 =====
   {
-    tour: 3,
+    round: 3,
     phase: "Phase de Commandement",
     narration: `Le sol sec craque. Plusieurs menaces titanesques approchent en même temps.`,
     choix: [
@@ -264,7 +264,7 @@ const phases = [
     ],
   },
   {
-    tour: 3,
+    round: 3,
     phase: "Phase de Charge",
     narration: `Les Tyranides forcent les accès, les petits essaims infiltrent les crevasses.`,
     choix: [
@@ -299,7 +299,7 @@ const phases = [
     ],
   },
   {
-    tour: 3,
+    round: 3,
     phase: "Phase d’Ébranlement",
     narration: `Les visions psychiques deviennent insupportables.`,
     choix: [
@@ -334,9 +334,9 @@ const phases = [
     ],
   },
 
-  // ===== TOUR 4 =====
+  // ===== ROUND 4 =====
   {
-    tour: 4,
+    round: 4,
     phase: "Phase de Commandement",
     narration: `Les Tyranides franchissent les pentes et se déversent sur le plateau du promontoire.`,
     choix: [
@@ -371,7 +371,7 @@ const phases = [
     ],
   },
   {
-    tour: 4,
+    round: 4,
     phase: "Phase de Charge",
     narration: `Les essaims convergent par tous les accès vers le sommet.`,
     choix: [
@@ -406,7 +406,7 @@ const phases = [
     ],
   },
   {
-    tour: 4,
+    round: 4,
     phase: "Phase d’Ébranlement",
     narration: `Les communications sont saturées, la roche tremble.`,
     choix: [
@@ -441,9 +441,9 @@ const phases = [
     ],
   },
 
-  // ===== TOUR 5 =====
+  // ===== ROUND 5 =====
   {
-    tour: 5,
+    round: 5,
     phase: "Phase de Commandement",
     narration: `Les boucliers vacillent. Les renforts n’arriveront pas. C’est le moment de décider.`,
     choix: [
@@ -478,7 +478,7 @@ const phases = [
     ],
   },
   {
-    tour: 5,
+    round: 5,
     phase: "Phase de Charge",
     narration: `Les monstres sont partout. Frapper ou tout détruire.`,
     choix: [
@@ -499,7 +499,7 @@ const phases = [
       {
         texte: "Faire sauter les conduits de carburant",
         fluff: `Explosion cataclysmique.`,
-        bonus: `2D6 BM à toutes les unités dans un rayon de 9" du centre.`,
+        bonus: `2D3 BM à toutes les unités dans un rayon de 9" du centre.`,
         tag: "Défaveur mineure",
         effet: { ...effMap["Défaveur mineure"] },
       },
@@ -513,7 +513,7 @@ const phases = [
     ],
   },
   {
-    tour: 5,
+    round: 5,
     phase: "Phase d’Ébranlement",
     narration: `Dernières forces, derniers choix.`,
     choix: [
@@ -573,7 +573,7 @@ const nextBtn       = document.getElementById("nextBtn");
 const skipBtn       = document.getElementById("skipBtn");
 const restartBtn    = document.getElementById("restartBtn");
 const logEl         = document.getElementById("log");
-const badgeTourEl   = document.getElementById("badgeTour");
+const badgeRoundEl  = document.getElementById("badgeRound");
 const badgePhaseEl  = document.getElementById("badgePhase");
 const startScreen   = document.getElementById("startScreen");
 const startBtn      = document.getElementById("startBtn");
@@ -606,28 +606,22 @@ startBtn.addEventListener("click", () => {
 });
 
 // --- Affichage d’une phase ---
-function typeNarration(text, cb) {
-  narrationEl.textContent = "";
-  let i = 0;
-  const interval = setInterval(() => {
-    if (i < text.length) {
-      narrationEl.textContent += text.charAt(i);
-      i++;
-    } else {
-      clearInterval(interval);
-      if (cb) cb();
-    }
-  }, 20); // Vitesse de frappe
-}
-
 function afficherPhase() {
   const p = phases[phaseIndex];
   if (!p) return finDePartie();
 
   phaseTitleEl.textContent = p.phase;
-  badgeTourEl.textContent = `Tour ${p.tour}`;
+  badgeRoundEl.textContent = `ROUND ${p.round}`;
   badgePhaseEl.textContent = p.phase;
   hudPhaseEl.textContent = `${phaseIndex + 1} / ${phases.length}`;
+
+  // Fade in narration
+  narrationEl.classList.remove("visible");
+  setTimeout(() => {
+    narrationEl.textContent = p.narration;
+    narrationEl.classList.add("visible");
+  }, 100);
+
 
   const choixMelanges = [...p.choix].sort(() => Math.random() - 0.5);
   choicesEl.innerHTML = "";
@@ -644,15 +638,16 @@ function afficherPhase() {
   nextBtn.style.display = "none";
   nextBtn.disabled = true;
 
-  typeNarration(p.narration, () => {
+  // Show choices after a delay
+  setTimeout(() => {
     choicesEl.style.display = "flex";
     Array.from(choicesEl.children).forEach((child, idx) => {
       setTimeout(() => {
         child.classList.remove("hidden");
         requestAnimationFrame(() => child.classList.add("visible"));
-      }, idx * 1000);
+      }, idx * 200); // Faster reveal
     });
-  });
+  }, 500);
 }
 
 // --- Application d’un choix ---
@@ -668,7 +663,7 @@ function choisir(choix) {
   const effStr = eff.length ? `Effets : ${eff.join(" | ")}` : "";
 
   const line = document.createElement("div");
-  line.innerHTML = `Tour <b>${p.tour}</b> — <i>${p.phase}</i> : ${choix.texte}<div class="meta">${choix.fluff}</div><div class="meta"><em>${choix.bonus}</em></div>${effStr ? `<div class="meta">${effStr}</div>` : ""}`;
+  line.innerHTML = `ROUND <b>${p.round}</b> — <i>${p.phase}</i> : ${choix.texte}<div class="meta">${choix.fluff}</div><div class="meta"><em>${choix.bonus}</em></div>${effStr ? `<div class="meta">${effStr}</div>` : ""}`;
   logEl.appendChild(line);
   logEl.scrollTop = logEl.scrollHeight;
 

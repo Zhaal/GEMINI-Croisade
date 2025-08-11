@@ -130,7 +130,8 @@ header .controls {
 }
 
 .stage {
-  flex: 3;
+  flex: 2.5;
+  order: 2;
   background: #1a1a1f;
   border-radius: 8px;
   padding: 1em;
@@ -174,6 +175,14 @@ header .controls {
   position: relative;
   z-index: 1;
   line-height: 1.4;
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+}
+
+.narr-text.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .phase-title {
@@ -229,7 +238,8 @@ header .controls {
 }
 
 .hud {
-  flex: 1.2;
+  flex: 1;
+  order: 1;
   display: flex;
   flex-direction: column;
   gap: 1em;
